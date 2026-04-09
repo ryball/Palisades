@@ -44,10 +44,16 @@ namespace Palisades.Model
                     return null;
                 }
 
+                string? iconLocation = link.GetType().InvokeMember("IconLocation", System.Reflection.BindingFlags.GetProperty, null, link, null) as string;
+
                 string name = Shortcut.GetName(shortcut);
                 string iconPath = Shortcut.GetIcon(shortcut, palisadeIdentifier);
 
-                return new LnkShortcut(name, iconPath, targetPath);
+                return new LnkShortcut(name, iconPath, targetPath)
+                {
+                    ShellIconLocation = string.IsNullOrWhiteSpace(iconLocation) ? targetPath : iconLocation,
+                    SourceShortcutPath = shortcut
+                };
             }
             finally
             {

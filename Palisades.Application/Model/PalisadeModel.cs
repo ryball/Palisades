@@ -132,6 +132,13 @@ namespace Palisades.Model
                     shortcut.GroupName = DefaultGroupName;
                 }
 
+                if (string.IsNullOrWhiteSpace(shortcut.ShellIconLocation))
+                {
+                    shortcut.ShellIconLocation = !string.IsNullOrWhiteSpace(shortcut.UriOrFileAction)
+                        ? shortcut.UriOrFileAction
+                        : shortcut.IconPath;
+                }
+
                 EnsureGroupState(shortcut.GroupName);
                 EnsureType(shortcut.TypeName);
             }

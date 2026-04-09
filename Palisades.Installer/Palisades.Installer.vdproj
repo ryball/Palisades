@@ -219,26 +219,26 @@
         "Product"
         {
         "Name" = "8:Microsoft Visual Studio"
-        "ProductName" = "8:Palisades"
-        "ProductCode" = "8:{7D63B1FC-9EB6-40BA-B99F-A7256942AC9D}"
-        "PackageCode" = "8:{569AB511-09D7-4B98-B58E-90668FB6CCB3}"
+        "ProductName" = "8:DeskHaven"
+        "ProductCode" = "8:{BC2D4E63-6EDC-44C4-90F2-948E7760A1CD}"
+        "PackageCode" = "8:{2B507E80-AD84-4EA2-9DB3-21685208827E}"
         "UpgradeCode" = "8:{3FC17BE7-B36A-495B-A4B5-04780533157F}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.0.0"
+        "ProductVersion" = "8:1.1.0"
         "Manufacturer" = "8:StouderIO"
         "ARPHELPTELEPHONE" = "8:"
-        "ARPHELPLINK" = "8:"
-        "Title" = "8:Palisades"
+        "ARPHELPLINK" = "8:https://github.com/Xstoudi/Palisades/releases"
+        "Title" = "8:DeskHaven"
         "Subject" = "8:"
         "ARPCONTACT" = "8:Xavier Stouder"
-        "Keywords" = "8:"
-        "ARPCOMMENTS" = "8:"
+        "Keywords" = "8:desktop fences, tray, tabs"
+        "ARPCOMMENTS" = "8:Palisades desktop organizer with tray controls, tabs, and multi-desktop support."
         "ARPURLINFOABOUT" = "8:https://stouder.io"
-        "ARPPRODUCTICON" = "8:"
+        "ARPPRODUCTICON" = "8:_BCECF6F40B5D4B4DAE2D6B40A90DA457"
         "ARPIconIndex" = "3:0"
         "SearchPath" = "8:"
         "UseSystemSearchPath" = "11:TRUE"
@@ -343,7 +343,7 @@
         {
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_01F91DA1D3D142B3A3A6CCFFF8A2BA7F"
             {
-            "Name" = "8:Palisades"
+            "Name" = "8:DeskHaven"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -357,7 +357,7 @@
             }
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_3E98658FE3194543987A7E2077D7F83F"
             {
-            "Name" = "8:Palisades"
+            "Name" = "8:DeskHaven"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -371,7 +371,7 @@
             }
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_4D3EFB6FC5A64CC18215F479EEC2EF51"
             {
-            "Name" = "8:Palisades"
+            "Name" = "8:DeskHaven"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -385,7 +385,7 @@
             }
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_7658CA83A76443E0BD0EEF5C60D963C4"
             {
-            "Name" = "8:Palisades"
+            "Name" = "8:DeskHaven"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"

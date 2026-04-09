@@ -15,7 +15,7 @@
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}"
         Style="{StaticResource MaterialDesignWindow}"
-        Title="About Palisades"
+        Title="About DeskHaven"
         Width="408"
         SizeToContent="Height"
         ResizeMode="NoResize">
@@ -24,7 +24,7 @@
     </Window.DataContext>
     <Grid>
         <StackPanel HorizontalAlignment="Center" Margin="50,0,50,20" TextElement.FontSize="18">
-            <Label FontSize="48" HorizontalAlignment="Center" Content="Palisades"/>
+            <Label FontSize="48" HorizontalAlignment="Center" Content="DeskHaven"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                 <Label FontWeight="Bold" Content="{Binding Version}" />
                 <Label Content="{Binding ReleaseDate}" />
@@ -42,7 +42,7 @@
             <StackPanel HorizontalAlignment="Center">
                 <Label FontSize="22" HorizontalAlignment="Center" Content="Credits" Margin="0,20,0,0" />
                 <TextBlock TextAlignment="Justify" TextWrapping="Wrap" Foreground="#DDFFFFFF" Margin="0,5,0,5" Padding="20,0,20,0">
-                    Palisades uses the following open source libraries to work.
+                    DeskHaven uses the following open source libraries to work.
                 </TextBlock>
                 <Label Padding="20,0,20,0">
                     <helpers:HyperlinkCommander Foreground="{StaticResource MaterialDesignDarkForeground}" Command="{Binding NavigateCommand}" CommandParameter="http://materialdesigninxaml.net/">MaterialDesignThemes</helpers:HyperlinkCommander>

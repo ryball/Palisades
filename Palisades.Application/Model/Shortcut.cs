@@ -16,6 +16,8 @@ namespace Palisades.Model
         private string name;
         private string iconPath;
         private string uriOrFileAction;
+        private string shellIconLocation;
+        private string sourceShortcutPath;
         private string groupName;
         private string typeName;
 
@@ -28,6 +30,8 @@ namespace Palisades.Model
             this.name = name;
             this.iconPath = iconPath;
             this.uriOrFileAction = uriOrFileAction;
+            shellIconLocation = string.Empty;
+            sourceShortcutPath = string.Empty;
             groupName = PalisadeModel.DefaultGroupName;
             typeName = string.Empty;
         }
@@ -36,6 +40,25 @@ namespace Palisades.Model
 
         public string IconPath { get { return iconPath; } set { iconPath = value; OnPropertyChanged(); } }
         public string UriOrFileAction { get { return uriOrFileAction; } set { uriOrFileAction = value; OnPropertyChanged(); } }
+        public string ShellIconLocation
+        {
+            get { return string.IsNullOrWhiteSpace(shellIconLocation) ? string.Empty : shellIconLocation; }
+            set
+            {
+                shellIconLocation = string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+                OnPropertyChanged();
+            }
+        }
+
+        public string SourceShortcutPath
+        {
+            get { return string.IsNullOrWhiteSpace(sourceShortcutPath) ? string.Empty : sourceShortcutPath; }
+            set
+            {
+                sourceShortcutPath = string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+                OnPropertyChanged();
+            }
+        }
         public string GroupName
         {
             get { return string.IsNullOrWhiteSpace(groupName) ? PalisadeModel.DefaultGroupName : groupName; }

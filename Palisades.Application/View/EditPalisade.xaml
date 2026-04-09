@@ -8,7 +8,7 @@
         xmlns:viewModel="clr-namespace:Palisades.ViewModel"
         xmlns:converters="clr-namespace:Palisades.Converters"
         mc:Ignorable="d"
-        Title="Edit Palisade"
+        Title="DeskHaven Settings"
         Width="500"
         SizeToContent="Height"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
@@ -86,6 +86,11 @@
             <TextBlock Margin="0,6,0,0" HorizontalAlignment="Center" Text="{Binding HeaderHeight, StringFormat={}Current height: {0}px}" />
         </StackPanel>
 
+        <Label Grid.Row="12" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Startup</Label>
+        <StackPanel Grid.Row="12" Grid.Column="2" HorizontalAlignment="Stretch">
+            <CheckBox Content="{Binding StartupSettingLabel}" IsChecked="{Binding StartWithWindows, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,0" />
+            <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Opacity="0.8" Text="You can turn this on or off at any time. It applies to the app globally, not just this fence." />
+        </StackPanel>
 
     </Grid>
 </Window>

@@ -11,7 +11,11 @@ namespace Palisades.ViewModel
         /// <summary>
         /// Raised when RaiseCanExecuteChanged is called.
         /// </summary>
-        public event EventHandler? CanExecuteChanged;
+        public event EventHandler? CanExecuteChanged
+        {
+            add { CommandManager.RequerySuggested += value; }
+            remove { CommandManager.RequerySuggested -= value; }
+        }
 
         /// <summary>
         /// Creates a new command that can always execute.
@@ -65,7 +69,7 @@ namespace Palisades.ViewModel
         /// </summary>
         public void RaiseCanExecuteChanged()
         {
-            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+            CommandManager.InvalidateRequerySuggested();
         }
     }
 
@@ -77,7 +81,11 @@ namespace Palisades.ViewModel
         /// <summary>
         /// Raised when RaiseCanExecuteChanged is called.
         /// </summary>
-        public event EventHandler? CanExecuteChanged;
+        public event EventHandler? CanExecuteChanged
+        {
+            add { CommandManager.RequerySuggested += value; }
+            remove { CommandManager.RequerySuggested -= value; }
+        }
 
         /// <summary>
         /// Creates a new command that can always execute.
@@ -131,7 +139,7 @@ namespace Palisades.ViewModel
         /// </summary>
         public void RaiseCanExecuteChanged()
         {
-            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+            CommandManager.InvalidateRequerySuggested();
         }
     }
 }

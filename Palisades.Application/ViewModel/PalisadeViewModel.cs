@@ -12,6 +12,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Data;
@@ -22,15 +23,20 @@ using System.Xml.Serialization;
 
 namespace Palisades.ViewModel
 {
-    public class PalisadeViewModel : INotifyPropertyChanged, IDropTarget
+    public class PalisadeViewModel : INotifyPropertyChanged, IDropTarget, IDragSource
     {
         #region Attributs
+        private const string ShortcutDragDataFormat = "Palisades.ShortcutDrag";
+
         private readonly DefaultDropHandler defaultDropHandler = new();
+        private readonly DefaultDragHandler defaultDragHandler = new();
         private readonly PalisadeModel model;
 
         private ICollectionView groupedShortcuts = null!;
         private volatile bool shouldSave;
         private Shortcut? selectedShortcut;
+        private Shortcut? lastRemovedShortcut;
+        private int lastRemovedShortcutIndex = -1;
         private bool isHiddenByUser;
         #endregion
 
@@ -212,12 +218,33 @@ namespace Palisades.ViewModel
 
         public string CollapseButtonText
         {
-            get { return IsCollapsed ? "+" : "−"; }
+            get { return IsCollapsed ? "▾" : "▴"; }
         }
 
         public bool SupportsMultipleDesktops
         {
             get { return VirtualDesktopHelper.HasMultipleDesktops(); }
+        }
+
+        public string StartupSettingLabel
+        {
+            get { return $"Start {AppBranding.DisplayName} when I sign in to Windows"; }
+        }
+
+        public bool StartWithWindows
+        {
+            get { return StartupLaunchHelper.IsEnabled(); }
+            set
+            {
+                bool currentValue = StartupLaunchHelper.IsEnabled();
+                if (currentValue == value)
+                {
+                    return;
+                }
+
+                StartupLaunchHelper.SetEnabled(value);
+                OnPropertyChanged();
+            }
         }
 
         public IEnumerable<VirtualDesktopInfo> AvailableDesktopTargets
@@ -355,6 +382,7 @@ namespace Palisades.ViewModel
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(HasSelectedShortcut));
                 OnPropertyChanged(nameof(SelectedShortcutGroupName));
+                CommandManager.InvalidateRequerySuggested();
                 Save();
             }
         }
@@ -362,6 +390,11 @@ namespace Palisades.ViewModel
         public bool HasSelectedShortcut
         {
             get { return SelectedShortcut != null; }
+        }
+
+        public bool CanUndoShortcutRemoval
+        {
+            get { return lastRemovedShortcut != null && lastRemovedShortcutIndex >= 0; }
         }
 
         public string SelectedShortcutGroupName
@@ -814,6 +847,339 @@ namespace Palisades.ViewModel
             return new List<Shortcut>();
         }
 
+        private static string[] CreateShellDropFiles(IEnumerable<Shortcut> shortcuts)
+        {
+            string exportDirectory = Path.Combine(Path.GetTempPath(), "Palisades", "DraggedShortcuts", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(exportDirectory);
+
+            List<string> exportedFiles = new();
+            HashSet<string> usedNames = new(StringComparer.OrdinalIgnoreCase);
+
+            foreach (Shortcut shortcut in shortcuts)
+            {
+                string safeBaseName = SanitizeFileName(string.IsNullOrWhiteSpace(shortcut.Name) ? "Shortcut" : shortcut.Name.Trim());
+                if (!usedNames.Add(safeBaseName))
+                {
+                    int suffix = 2;
+                    string candidateName;
+                    do
+                    {
+                        candidateName = $"{safeBaseName} ({suffix++})";
+                    }
+                    while (!usedNames.Add(candidateName));
+
+                    safeBaseName = candidateName;
+                }
+
+                if (TryReuseOriginalShortcutFile(shortcut, exportDirectory, safeBaseName, out string reusedShortcutPath))
+                {
+                    exportedFiles.Add(reusedShortcutPath);
+                    continue;
+                }
+
+                string? shellIconLocation = ResolveShellIconLocation(shortcut);
+
+                if (shortcut is UrlShortcut || IsWebUrl(shortcut.UriOrFileAction))
+                {
+                    string urlPath = Path.Combine(exportDirectory, safeBaseName + ".url");
+                    List<string> lines = new()
+                    {
+                        "[InternetShortcut]",
+                        $"URL={shortcut.UriOrFileAction}"
+                    };
+
+                    if (TrySplitIconLocation(shellIconLocation, out string iconFile, out int iconIndex))
+                    {
+                        lines.Add($"IconFile={iconFile}");
+                        lines.Add($"IconIndex={iconIndex}");
+                    }
+
+                    File.WriteAllLines(urlPath, lines);
+                    exportedFiles.Add(urlPath);
+                    continue;
+                }
+
+                string linkPath = Path.Combine(exportDirectory, safeBaseName + ".lnk");
+                CreateWindowsShortcutFile(linkPath, shortcut.UriOrFileAction, shellIconLocation);
+                exportedFiles.Add(linkPath);
+            }
+
+            return exportedFiles.ToArray();
+        }
+
+        private static string SanitizeFileName(string fileName)
+        {
+            char[] invalidCharacters = Path.GetInvalidFileNameChars();
+            return string.Concat(fileName.Select(character => invalidCharacters.Contains(character) ? '_' : character));
+        }
+
+        private static bool IsWebUrl(string? value)
+        {
+            return Uri.TryCreate(value, UriKind.Absolute, out Uri? uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+        }
+
+        private static bool TryReuseOriginalShortcutFile(Shortcut shortcut, string exportDirectory, string safeBaseName, out string exportedPath)
+        {
+            exportedPath = string.Empty;
+
+            string? sourceShortcutPath = ResolveOriginalShortcutPath(shortcut);
+            if (string.IsNullOrWhiteSpace(sourceShortcutPath) || !File.Exists(sourceShortcutPath))
+            {
+                return false;
+            }
+
+            string extension = Path.GetExtension(sourceShortcutPath);
+            if (!string.Equals(extension, ".lnk", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(extension, ".url", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            exportedPath = Path.Combine(exportDirectory, safeBaseName + extension.ToLowerInvariant());
+            File.Copy(sourceShortcutPath, exportedPath, true);
+            return true;
+        }
+
+        private static string? ResolveOriginalShortcutPath(Shortcut shortcut)
+        {
+            if (!string.IsNullOrWhiteSpace(shortcut.SourceShortcutPath) && File.Exists(shortcut.SourceShortcutPath))
+            {
+                return shortcut.SourceShortcutPath;
+            }
+
+            foreach (string searchRoot in GetShortcutSearchRoots())
+            {
+                foreach (string extension in new[] { ".lnk", ".url" })
+                {
+                    try
+                    {
+                        IEnumerable<string> candidates = Directory.EnumerateFiles(searchRoot, SanitizeFileName(shortcut.Name) + extension, SearchOption.AllDirectories);
+                        foreach (string candidate in candidates)
+                        {
+                            if (ShortcutMatchesTarget(candidate, shortcut))
+                            {
+                                shortcut.SourceShortcutPath = candidate;
+                                return candidate;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore inaccessible folders while searching common shortcut locations.
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static IEnumerable<string> GetShortcutSearchRoots()
+        {
+            return new[]
+            {
+                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory),
+                Environment.GetFolderPath(Environment.SpecialFolder.StartMenu),
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu)
+            }
+            .Where(path => !string.IsNullOrWhiteSpace(path) && Directory.Exists(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static bool ShortcutMatchesTarget(string shortcutPath, Shortcut shortcut)
+        {
+            if (string.Equals(Path.GetExtension(shortcutPath), ".url", StringComparison.OrdinalIgnoreCase))
+            {
+                string? url = File.ReadLines(shortcutPath).FirstOrDefault(value => value.StartsWith("URL="));
+                string candidateUrl = url?.Replace("URL=", string.Empty).Replace("\"", string.Empty).Trim() ?? string.Empty;
+                return string.Equals(candidateUrl, shortcut.UriOrFileAction, StringComparison.OrdinalIgnoreCase);
+            }
+
+            Type? shellType = Type.GetTypeFromProgID("WScript.Shell");
+            if (shellType == null)
+            {
+                return false;
+            }
+
+            object? shell = null;
+            object? link = null;
+            try
+            {
+                shell = Activator.CreateInstance(shellType);
+                if (shell == null)
+                {
+                    return false;
+                }
+
+                link = shellType.InvokeMember("CreateShortcut", System.Reflection.BindingFlags.InvokeMethod, null, shell, new object[] { shortcutPath });
+                string? candidateTarget = link?.GetType().InvokeMember("TargetPath", System.Reflection.BindingFlags.GetProperty, null, link, null) as string;
+                return string.Equals(candidateTarget, shortcut.UriOrFileAction, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (link != null && Marshal.IsComObject(link))
+                {
+                    Marshal.FinalReleaseComObject(link);
+                }
+
+                if (shell != null && Marshal.IsComObject(shell))
+                {
+                    Marshal.FinalReleaseComObject(shell);
+                }
+            }
+        }
+
+        private static string? ResolveShellIconLocation(Shortcut shortcut)
+        {
+            if (TrySplitIconLocation(shortcut.ShellIconLocation, out string originalIconFile, out int originalIconIndex)
+                && (File.Exists(originalIconFile) || Directory.Exists(originalIconFile)))
+            {
+                return $"{originalIconFile},{originalIconIndex}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(shortcut.UriOrFileAction) && (File.Exists(shortcut.UriOrFileAction) || Directory.Exists(shortcut.UriOrFileAction)))
+            {
+                return $"{shortcut.UriOrFileAction},0";
+            }
+
+            string? convertedIconPath = EnsureIcoIconPath(shortcut.IconPath);
+            if (!string.IsNullOrWhiteSpace(convertedIconPath) && File.Exists(convertedIconPath))
+            {
+                return $"{convertedIconPath},0";
+            }
+
+            return null;
+        }
+
+        private static bool TrySplitIconLocation(string? iconLocation, out string iconFile, out int iconIndex)
+        {
+            iconFile = string.Empty;
+            iconIndex = 0;
+
+            if (string.IsNullOrWhiteSpace(iconLocation))
+            {
+                return false;
+            }
+
+            string trimmed = iconLocation.Trim();
+            int separatorIndex = trimmed.LastIndexOf(',');
+            if (separatorIndex > 1 && int.TryParse(trimmed[(separatorIndex + 1)..], out int parsedIndex))
+            {
+                iconFile = trimmed[..separatorIndex].Trim().Trim('"');
+                iconIndex = parsedIndex;
+            }
+            else
+            {
+                iconFile = trimmed.Trim('"');
+            }
+
+            return !string.IsNullOrWhiteSpace(iconFile);
+        }
+
+        private static string? EnsureIcoIconPath(string? iconPath)
+        {
+            if (string.IsNullOrWhiteSpace(iconPath) || !File.Exists(iconPath))
+            {
+                return null;
+            }
+
+            if (string.Equals(Path.GetExtension(iconPath), ".ico", StringComparison.OrdinalIgnoreCase))
+            {
+                return iconPath;
+            }
+
+            string exportIconDirectory = Path.Combine(PDirectory.GetAppDirectory(), "export-icons");
+            PDirectory.EnsureExists(exportIconDirectory);
+
+            string safeBaseName = SanitizeFileName(Path.GetFileNameWithoutExtension(iconPath));
+            string hash = Math.Abs(StringComparer.OrdinalIgnoreCase.GetHashCode(iconPath)).ToString("X8");
+            string icoPath = Path.Combine(exportIconDirectory, $"{safeBaseName}-{hash}.ico");
+
+            if (File.Exists(icoPath) && File.GetLastWriteTimeUtc(icoPath) >= File.GetLastWriteTimeUtc(iconPath))
+            {
+                return icoPath;
+            }
+
+            using System.Drawing.Bitmap bitmap = new(iconPath);
+            IntPtr iconHandle = bitmap.GetHicon();
+            try
+            {
+                using System.Drawing.Icon icon = System.Drawing.Icon.FromHandle(iconHandle);
+                using FileStream stream = new(icoPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                icon.Save(stream);
+            }
+            finally
+            {
+                Palisades.Helpers.Native.Bindings.DestroyIcon(iconHandle);
+            }
+
+            return icoPath;
+        }
+
+        private static void CreateWindowsShortcutFile(string shortcutPath, string targetPath, string? iconLocation)
+        {
+            Type? shellType = Type.GetTypeFromProgID("WScript.Shell");
+            if (shellType == null)
+            {
+                File.WriteAllText(shortcutPath + ".txt", targetPath ?? string.Empty);
+                return;
+            }
+
+            object? shell = null;
+            object? link = null;
+
+            try
+            {
+                shell = Activator.CreateInstance(shellType);
+                if (shell == null)
+                {
+                    return;
+                }
+
+                link = shellType.InvokeMember("CreateShortcut", System.Reflection.BindingFlags.InvokeMethod, null, shell, new object[] { shortcutPath });
+                if (link == null)
+                {
+                    return;
+                }
+
+                Type linkType = link.GetType();
+                linkType.InvokeMember("TargetPath", System.Reflection.BindingFlags.SetProperty, null, link, new object[] { targetPath ?? string.Empty });
+
+                string? workingDirectory = !string.IsNullOrWhiteSpace(targetPath) && File.Exists(targetPath)
+                    ? Path.GetDirectoryName(targetPath)
+                    : null;
+                if (!string.IsNullOrWhiteSpace(workingDirectory))
+                {
+                    linkType.InvokeMember("WorkingDirectory", System.Reflection.BindingFlags.SetProperty, null, link, new object[] { workingDirectory });
+                }
+
+                if (TrySplitIconLocation(iconLocation, out string iconFile, out int iconIndex)
+                    && (File.Exists(iconFile) || Directory.Exists(iconFile)))
+                {
+                    linkType.InvokeMember("IconLocation", System.Reflection.BindingFlags.SetProperty, null, link, new object[] { $"{iconFile},{iconIndex}" });
+                }
+
+                linkType.InvokeMember("Save", System.Reflection.BindingFlags.InvokeMethod, null, link, null);
+            }
+            finally
+            {
+                if (link != null && Marshal.IsComObject(link))
+                {
+                    Marshal.FinalReleaseComObject(link);
+                }
+
+                if (shell != null && Marshal.IsComObject(shell))
+                {
+                    Marshal.FinalReleaseComObject(shell);
+                }
+            }
+        }
+
         private static string? ResolveDropGroupName(IDropInfo dropInfo)
         {
             if (dropInfo.TargetGroup?.Name != null)
@@ -834,12 +1200,159 @@ namespace Palisades.ViewModel
             return null;
         }
 
+        private static string[] GetFileDropPaths(object? data)
+        {
+            if (data is string[] directPaths)
+            {
+                return directPaths.Where(path => !string.IsNullOrWhiteSpace(path)).ToArray();
+            }
+
+            if (data is IEnumerable<string> enumerablePaths && data is not string)
+            {
+                return enumerablePaths.Where(path => !string.IsNullOrWhiteSpace(path)).ToArray();
+            }
+
+            if (data is IDataObject dataObject && dataObject.GetDataPresent(DataFormats.FileDrop))
+            {
+                return (dataObject.GetData(DataFormats.FileDrop) as string[] ?? Array.Empty<string>())
+                    .Where(path => !string.IsNullOrWhiteSpace(path))
+                    .ToArray();
+            }
+
+            return Array.Empty<string>();
+        }
+
+        private Shortcut? BuildShortcutFromDroppedPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || (!File.Exists(path) && !Directory.Exists(path)))
+            {
+                return null;
+            }
+
+            string extension = Path.GetExtension(path) ?? string.Empty;
+            if (string.Equals(extension, ".lnk", StringComparison.OrdinalIgnoreCase))
+            {
+                return LnkShortcut.BuildFrom(path, Identifier);
+            }
+
+            if (string.Equals(extension, ".url", StringComparison.OrdinalIgnoreCase))
+            {
+                return UrlShortcut.BuildFrom(path, Identifier);
+            }
+
+            string displayName = Directory.Exists(path) ? new DirectoryInfo(path).Name : Shortcut.GetName(path);
+            string iconPath = Shortcut.GetIcon(path, Identifier);
+
+            return new LnkShortcut(displayName, iconPath, path)
+            {
+                ShellIconLocation = path
+            };
+        }
+
+        private bool ImportDroppedPaths(IEnumerable<string> paths)
+        {
+            List<Shortcut> importedShortcuts = new();
+
+            foreach (Shortcut? shortcutItem in paths.Select(BuildShortcutFromDroppedPath))
+            {
+                if (shortcutItem == null)
+                {
+                    continue;
+                }
+
+                Shortcuts.Add(shortcutItem);
+                importedShortcuts.Add(shortcutItem);
+            }
+
+            if (importedShortcuts.Count == 0)
+            {
+                return false;
+            }
+
+            SelectedShortcut = importedShortcuts.Last();
+            RefreshGroups();
+            Save();
+            return true;
+        }
+
+        public bool CanStartDrag(IDragInfo dragInfo)
+        {
+            return GetDraggedShortcuts(dragInfo.SourceItems ?? dragInfo.Data).Count > 0;
+        }
+
+        public void StartDrag(IDragInfo dragInfo)
+        {
+            defaultDragHandler.StartDrag(dragInfo);
+
+            List<Shortcut> draggedShortcuts = GetDraggedShortcuts(dragInfo.SourceItems ?? dragInfo.Data);
+            if (draggedShortcuts.Count == 0)
+            {
+                return;
+            }
+
+            dragInfo.Data = draggedShortcuts.Count == 1 ? draggedShortcuts[0] : draggedShortcuts;
+
+            DataObject dataObject = dragInfo.DataObject as DataObject ?? new DataObject();
+            dataObject.SetData(ShortcutDragDataFormat, draggedShortcuts);
+            dataObject.SetData(typeof(List<Shortcut>), draggedShortcuts);
+            if (draggedShortcuts.Count == 1)
+            {
+                dataObject.SetData(typeof(Shortcut), draggedShortcuts[0]);
+            }
+
+            string[] exportedFiles = CreateShellDropFiles(draggedShortcuts);
+            if (exportedFiles.Length > 0)
+            {
+                dataObject.SetData(DataFormats.FileDrop, exportedFiles);
+            }
+
+            dragInfo.DataObject = dataObject;
+            dragInfo.Effects = DragDropEffects.Move | DragDropEffects.Copy;
+        }
+
+        public void Dropped(IDropInfo dropInfo)
+        {
+            defaultDragHandler.Dropped(dropInfo);
+        }
+
+        public void DragCancelled()
+        {
+            defaultDragHandler.DragCancelled();
+        }
+
+        public bool TryCatchOccurredException(Exception exception)
+        {
+            return defaultDragHandler.TryCatchOccurredException(exception);
+        }
+
+        public void DragDropOperationFinished(DragDropEffects operationResult, IDragInfo dragInfo)
+        {
+            defaultDragHandler.DragDropOperationFinished(operationResult, dragInfo);
+        }
+
         public void DragOver(IDropInfo dropInfo)
         {
             List<Shortcut> draggedShortcuts = GetDraggedShortcuts(dropInfo.Data);
             if (draggedShortcuts.Count == 0)
             {
-                dropInfo.Effects = DragDropEffects.None;
+                string[] externalPaths = GetFileDropPaths(dropInfo.Data);
+                if (externalPaths.Length == 0)
+                {
+                    dropInfo.Effects = DragDropEffects.None;
+                    return;
+                }
+
+                dropInfo.Effects = DragDropEffects.Copy;
+                dropInfo.DropTargetAdorner = DropTargetAdorners.Highlight;
+                dropInfo.NotHandled = false;
+                return;
+            }
+
+            if (dropInfo.TargetCollection == null)
+            {
+                dropInfo.Effects = DragDropEffects.Move;
+                dropInfo.DropTargetAdorner = DropTargetAdorners.Highlight;
+                dropInfo.NotHandled = false;
                 return;
             }
 
@@ -860,7 +1373,39 @@ namespace Palisades.ViewModel
 
             string? destinationGroupName = ResolveDropGroupName(dropInfo);
 
-            defaultDropHandler.Drop(dropInfo);
+            if (dropInfo.TargetCollection == null)
+            {
+                foreach (Shortcut shortcut in draggedShortcuts)
+                {
+                    foreach (PalisadeViewModel sourceViewModel in PalisadesManager.palisades.Values
+                                 .Select(window => window.DataContext as PalisadeViewModel)
+                                 .OfType<PalisadeViewModel>())
+                    {
+                        if (ReferenceEquals(sourceViewModel, this))
+                        {
+                            continue;
+                        }
+
+                        if (!sourceViewModel.Shortcuts.Contains(shortcut))
+                        {
+                            continue;
+                        }
+
+                        sourceViewModel.Shortcuts.Remove(shortcut);
+                        sourceViewModel.Save();
+                        break;
+                    }
+
+                    if (!Shortcuts.Contains(shortcut))
+                    {
+                        Shortcuts.Add(shortcut);
+                    }
+                }
+            }
+            else
+            {
+                defaultDropHandler.Drop(dropInfo);
+            }
 
             if (!string.IsNullOrWhiteSpace(destinationGroupName))
             {
@@ -1034,41 +1579,22 @@ namespace Palisades.ViewModel
 
         public void DropShortcutsHandler(DragEventArgs dragEventArgs)
         {
-
             dragEventArgs.Handled = true;
-            if (!dragEventArgs.Data.GetDataPresent(DataFormats.FileDrop))
+            if (dragEventArgs.Data.GetDataPresent(ShortcutDragDataFormat))
             {
                 dragEventArgs.Handled = false;
                 return;
             }
 
-            string[] shortcuts = (string[])dragEventArgs.Data.GetData(DataFormats.FileDrop);
-            foreach (string shortcut in shortcuts)
+            string[] droppedPaths = GetFileDropPaths(dragEventArgs.Data);
+            if (droppedPaths.Length == 0)
             {
-                string? extension = Path.GetExtension(shortcut);
-
-                if (extension == null)
-                {
-                    continue;
-                }
-
-                if (extension == ".lnk")
-                {
-                    Shortcut? shortcutItem = LnkShortcut.BuildFrom(shortcut, Identifier);
-                    if (shortcutItem != null)
-                    {
-                        Shortcuts.Add(shortcutItem);
-                    }
-                }
-                if (extension == ".url")
-                {
-                    Shortcut? shortcutItem = UrlShortcut.BuildFrom(shortcut, Identifier);
-                    if (shortcutItem != null)
-                    {
-                        Shortcuts.Add(shortcutItem);
-                    }
-                }
+                dragEventArgs.Handled = false;
+                return;
             }
+
+            bool imported = ImportDroppedPaths(droppedPaths);
+            dragEventArgs.Effects = imported ? DragDropEffects.Copy : DragDropEffects.None;
         }
 
         public ICommand ClickShortcut
@@ -1116,6 +1642,22 @@ namespace Palisades.ViewModel
             }
         }
 
+        public ICommand RemoveSelectedShortcutCommand
+        {
+            get
+            {
+                return new RelayCommand<Shortcut>((shortcut) => RemoveShortcut(shortcut));
+            }
+        }
+
+        public ICommand UndoRemoveShortcutCommand
+        {
+            get
+            {
+                return new RelayCommand(UndoLastShortcutRemoval);
+            }
+        }
+
         public ICommand DelKeyPressed
         {
             get
@@ -1132,6 +1674,13 @@ namespace Palisades.ViewModel
             }
 
             Key pressedKey = keyEventArgs.Key == Key.System ? keyEventArgs.SystemKey : keyEventArgs.Key;
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && pressedKey == Key.Z)
+            {
+                UndoLastShortcutRemoval();
+                keyEventArgs.Handled = true;
+                return;
+            }
+
             if (pressedKey != Key.Delete)
             {
                 return;
@@ -1143,13 +1692,60 @@ namespace Palisades.ViewModel
 
         public void DeleteShortcut()
         {
-            if (SelectedShortcut == null)
+            RemoveShortcut(SelectedShortcut);
+        }
+
+        public void RemoveShortcut(Shortcut? shortcut)
+        {
+            Shortcut? shortcutToRemove = shortcut ?? SelectedShortcut;
+            if (shortcutToRemove == null)
             {
                 return;
             }
 
-            Shortcuts.Remove(SelectedShortcut);
-            SelectedShortcut = null;
+            int removedIndex = Shortcuts.IndexOf(shortcutToRemove);
+            if (removedIndex < 0)
+            {
+                return;
+            }
+
+            lastRemovedShortcut = shortcutToRemove;
+            lastRemovedShortcutIndex = removedIndex;
+
+            Shortcuts.Remove(shortcutToRemove);
+            if (ReferenceEquals(SelectedShortcut, shortcutToRemove))
+            {
+                SelectedShortcut = null;
+            }
+
+            OnPropertyChanged(nameof(CanUndoShortcutRemoval));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        public void UndoLastShortcutRemoval()
+        {
+            if (lastRemovedShortcut == null || lastRemovedShortcutIndex < 0)
+            {
+                return;
+            }
+
+            if (Shortcuts.Contains(lastRemovedShortcut))
+            {
+                SelectedShortcut = lastRemovedShortcut;
+                lastRemovedShortcut = null;
+                lastRemovedShortcutIndex = -1;
+                OnPropertyChanged(nameof(CanUndoShortcutRemoval));
+                CommandManager.InvalidateRequerySuggested();
+                return;
+            }
+
+            int restoreIndex = Math.Min(lastRemovedShortcutIndex, Shortcuts.Count);
+            Shortcuts.Insert(restoreIndex, lastRemovedShortcut);
+            SelectedShortcut = lastRemovedShortcut;
+            lastRemovedShortcut = null;
+            lastRemovedShortcutIndex = -1;
+            OnPropertyChanged(nameof(CanUndoShortcutRemoval));
+            CommandManager.InvalidateRequerySuggested();
         }
 
         /// <summary>

@@ -18,7 +18,7 @@ namespace Palisades
         [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern int SetCurrentProcessExplicitAppUserModelID(string appID);
 
-        private const string AppUserModelId = "io.stouder.Palisades";
+        private static readonly string AppUserModelId = AppBranding.AppUserModelId;
         private readonly HashSet<string> lastHiddenPalisadeIdentifiers = new(StringComparer.OrdinalIgnoreCase);
         private readonly DispatcherTimer desktopMonitorTimer = new() { Interval = TimeSpan.FromMilliseconds(800) };
         private string lastKnownDesktopId = string.Empty;
@@ -67,7 +67,7 @@ namespace Palisades
 
             trayIcon = new Forms.NotifyIcon
             {
-                Text = "Palisades",
+                Text = AppBranding.DisplayName,
                 Icon = icon,
                 ContextMenuStrip = trayMenu
             };
@@ -288,7 +288,7 @@ namespace Palisades
                 return;
             }
 
-            trayIcon.BalloonTipTitle = "Palisades is running";
+            trayIcon.BalloonTipTitle = $"{AppBranding.DisplayName} is running";
             trayIcon.BalloonTipText = "Use the tray icon to show, hide, restore, create, or exit your fences.";
             trayIcon.ShowBalloonTip(3000);
         }

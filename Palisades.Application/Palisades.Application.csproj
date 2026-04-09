@@ -9,17 +9,17 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
     <SignAssembly>False</SignAssembly>
-    <PackageId>Palisades</PackageId>
-    <Version>0.3.0</Version>
+    <PackageId>DeskHaven</PackageId>
+    <Version>1.1.0</Version>
     <Authors>Xavier Stouder</Authors>
     <Company>StouderIO</Company>
-    <Product>Palisades</Product>
+    <Product>DeskHaven</Product>
     <PackageProjectUrl>https://github.com/Xstoudi/Palisades</PackageProjectUrl>
     <Copyright></Copyright>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Xstoudi/Palisades</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <AssemblyName>Palisades</AssemblyName>
+    <AssemblyName>DeskHaven</AssemblyName>
     <PackageLicenseFile>D:\Programmation\Perso\Palisades\LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <ApplicationIcon>Ressources\icon.ico</ApplicationIcon>

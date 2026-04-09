@@ -15,7 +15,8 @@ namespace Palisades.Model
 
         public static UrlShortcut? BuildFrom(string shortcut, string palisadeIdentifier)
         {
-            string? line = File.ReadLines(shortcut).FirstOrDefault((value) => value.StartsWith("URL="));
+            string[] lines = File.ReadAllLines(shortcut);
+            string? line = lines.FirstOrDefault((value) => value.StartsWith("URL="));
             if (line == null)
             {
                 return null;
@@ -25,10 +26,20 @@ namespace Palisades.Model
             url = url.Replace("\"", "");
             url = url.Replace("BASE", "");
 
+            string? iconFile = lines.FirstOrDefault(value => value.StartsWith("IconFile="))?.Replace("IconFile=", "").Trim();
+            string? iconIndex = lines.FirstOrDefault(value => value.StartsWith("IconIndex="))?.Replace("IconIndex=", "").Trim();
+            string shellIconLocation = string.IsNullOrWhiteSpace(iconFile)
+                ? string.Empty
+                : (int.TryParse(iconIndex, out int parsedIndex) ? $"{iconFile},{parsedIndex}" : iconFile);
+
             string name = Shortcut.GetName(shortcut);
             string iconPath = Shortcut.GetIcon(shortcut, palisadeIdentifier);
 
-            return new UrlShortcut(name, iconPath, url);
+            return new UrlShortcut(name, iconPath, url)
+            {
+                ShellIconLocation = shellIconLocation,
+                SourceShortcutPath = shortcut
+            };
         }
     }
 }
