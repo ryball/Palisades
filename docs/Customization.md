@@ -23,7 +23,8 @@ Palisades now uses a clean, flat layout inside each fence.
 ## System tray behavior
 
 - Running Palisades now adds an icon to the Windows **system tray**.
-- Right-click the tray icon to **Show all fences**, **Hide all fences**, **Restore last hidden fences**, create a **New fence**, or **Exit**.
+- Right-click any fence header and choose **Hide fence** to hide just that one fence.
+- Right-click the tray icon to **Show all fences**, **Hide all fences**, **Restore last hidden fences**, or use the **Fences** submenu to **show/hide individual fences** again.
 - Double-click the tray icon to show the current fences again.
 - On startup, Palisades shows a small tray notification so it is easier to discover where the app is running.
 
@@ -32,3 +33,4 @@ Palisades now uses a clean, flat layout inside each fence.
 - Header size is stored per palisade.
 - Each fence remembers whether it is expanded or collapsed to the title bar.
 - Type assignments are stored per shortcut.
+- Empty placeholder `No name` fences created by older builds are cleaned up on startup so they do not keep reappearing.

@@ -658,6 +658,8 @@ namespace Palisades.ViewModel
 
         public ICommand DeletePalisadeCommand { get; private set; } = new RelayCommand<string>((identifier) => PalisadesManager.DeletePalisade(identifier));
 
+        public ICommand HidePalisadeCommand { get; private set; } = new RelayCommand<string>((identifier) => PalisadesManager.HidePalisade(identifier));
+
         public ICommand ToggleCollapsedStateCommand
         {
             get

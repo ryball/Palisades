@@ -27,9 +27,6 @@
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="0" ResizeBorderThickness="5" CornerRadius="20" GlassFrameThickness="0" NonClientFrameEdges="None" UseAeroCaptionButtons="False" />
     </WindowChrome.WindowChrome>
-    <Window.DataContext>
-        <viewModel:PalisadeViewModel />
-    </Window.DataContext>
     <Window.Resources>
         <converters:PathToImageConverter x:Key="PathToImage" />
         <converters:MultiValueEqualityConverter x:Key="MultiValueEqualityConverter" />
@@ -46,6 +43,7 @@
                 <Grid.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="Edit" Command="{Binding Path=Data.EditPalisadeCommand, Source={StaticResource proxy}}" CommandParameter="{Binding}" />
+                        <MenuItem Header="Hide fence" Command="{Binding Path=Data.HidePalisadeCommand, Source={StaticResource proxy}}" CommandParameter="{Binding Identifier}" />
                         <MenuItem Header="{Binding Path=Data.CollapseMenuHeader, Source={StaticResource proxy}}" Command="{Binding Path=Data.ToggleCollapsedStateCommand, Source={StaticResource proxy}}" />
                         <MenuItem Header="Types">
                             <MenuItem Header="Add type..." Command="{Binding Path=Data.AddTypeCommand, Source={StaticResource proxy}}" />
@@ -137,7 +135,7 @@
                                         <i:EventTrigger EventName="MouseDoubleClick" >
                                             <i:LaunchUriOrFileAction Path="{Binding UriOrFileAction}" />
                                         </i:EventTrigger>
-                                        <i:EventTrigger EventName="MouseDown" >
+                                        <i:EventTrigger EventName="PreviewMouseLeftButtonDown" >
                                             <i:InvokeCommandAction Command="{Binding Path=Data.ClickShortcut, Source={StaticResource proxy}}" CommandParameter="{Binding}" />
                                         </i:EventTrigger>
                                         <i:EventTrigger EventName="PreviewMouseRightButtonDown" >

@@ -1,4 +1,5 @@
 ﻿using Palisades.Helpers;
+using Palisades.ViewModel;
 using Sentry;
 using System;
 using System.Collections.Generic;
@@ -20,6 +21,7 @@ namespace Palisades
         private const string AppUserModelId = "io.stouder.Palisades";
         private readonly HashSet<string> lastHiddenPalisadeIdentifiers = new(StringComparer.OrdinalIgnoreCase);
         private Forms.NotifyIcon? trayIcon;
+        private Forms.ContextMenuStrip? trayMenu;
 
         public App()
         {
@@ -56,13 +58,8 @@ namespace Palisades
                 icon = new Drawing.Icon(iconPath);
             }
 
-            Forms.ContextMenuStrip trayMenu = new();
-            trayMenu.Items.Add("Show all fences", null, (_, _) => Dispatcher.Invoke(ShowAllPalisades));
-            trayMenu.Items.Add("Hide all fences", null, (_, _) => Dispatcher.Invoke(HideAllPalisades));
-            trayMenu.Items.Add("Restore last hidden fences", null, (_, _) => Dispatcher.Invoke(RestoreLastHiddenPalisades));
-            trayMenu.Items.Add("New fence", null, (_, _) => Dispatcher.Invoke(PalisadesManager.CreatePalisade));
-            trayMenu.Items.Add(new Forms.ToolStripSeparator());
-            trayMenu.Items.Add("Exit", null, (_, _) => Dispatcher.Invoke(ExitApplication));
+            trayMenu = new Forms.ContextMenuStrip();
+            trayMenu.Opening += (_, _) => RefreshTrayMenu();
 
             trayIcon = new Forms.NotifyIcon
             {
@@ -70,9 +67,79 @@ namespace Palisades
                 Icon = icon,
                 ContextMenuStrip = trayMenu
             };
+
+            RefreshTrayMenu();
             trayIcon.Visible = false;
             trayIcon.Visible = true;
             trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(ShowAllPalisades);
+        }
+
+        private void RefreshTrayMenu()
+        {
+            if (trayMenu == null)
+            {
+                return;
+            }
+
+            trayMenu.Items.Clear();
+            trayMenu.Items.Add("Show all fences", null, (_, _) => Dispatcher.Invoke(ShowAllPalisades));
+            trayMenu.Items.Add("Hide all fences", null, (_, _) => Dispatcher.Invoke(HideAllPalisades));
+            trayMenu.Items.Add("Restore last hidden fences", null, (_, _) => Dispatcher.Invoke(RestoreLastHiddenPalisades));
+
+            Forms.ToolStripMenuItem fencesMenu = new("Fences");
+            foreach (KeyValuePair<string, View.Palisade> entry in PalisadesManager.palisades.OrderBy(entry => (entry.Value.DataContext as PalisadeViewModel)?.Name ?? "No name"))
+            {
+                string identifier = entry.Key;
+                string fenceName = (entry.Value.DataContext as PalisadeViewModel)?.Name ?? "No name";
+                bool isVisible = entry.Value.IsVisible;
+
+                Forms.ToolStripMenuItem item = new(isVisible ? $"Hide {fenceName}" : $"Show {fenceName}");
+                item.Click += (_, _) => Dispatcher.Invoke(() => TogglePalisadeVisibility(identifier));
+                fencesMenu.DropDownItems.Add(item);
+            }
+
+            if (fencesMenu.DropDownItems.Count == 0)
+            {
+                fencesMenu.DropDownItems.Add("No fences").Enabled = false;
+            }
+
+            trayMenu.Items.Add(fencesMenu);
+            trayMenu.Items.Add("New fence", null, (_, _) => Dispatcher.Invoke(PalisadesManager.CreatePalisade));
+            trayMenu.Items.Add(new Forms.ToolStripSeparator());
+            trayMenu.Items.Add("Exit", null, (_, _) => Dispatcher.Invoke(ExitApplication));
+        }
+
+        private void TogglePalisadeVisibility(string identifier)
+        {
+            if (!PalisadesManager.palisades.TryGetValue(identifier, out View.Palisade? palisade))
+            {
+                return;
+            }
+
+            if (palisade.IsVisible)
+            {
+                lastHiddenPalisadeIdentifiers.Add(identifier);
+                palisade.Hide();
+            }
+            else
+            {
+                EnsurePalisadeIsVisible(palisade);
+
+                if (!palisade.IsVisible)
+                {
+                    palisade.Show();
+                }
+
+                if (palisade.WindowState == WindowState.Minimized)
+                {
+                    palisade.WindowState = WindowState.Normal;
+                }
+
+                palisade.Activate();
+                lastHiddenPalisadeIdentifiers.Remove(identifier);
+            }
+
+            RefreshTrayMenu();
         }
 
         private void ShowAllPalisades()
@@ -93,6 +160,9 @@ namespace Palisades
 
                 palisade.Activate();
             }
+
+            lastHiddenPalisadeIdentifiers.Clear();
+            RefreshTrayMenu();
         }
 
         private void HideAllPalisades()
@@ -109,6 +179,8 @@ namespace Palisades
 
                 palisade.Hide();
             }
+
+            RefreshTrayMenu();
         }
 
         private void RestoreLastHiddenPalisades()
@@ -142,6 +214,7 @@ namespace Palisades
             }
 
             lastHiddenPalisadeIdentifiers.Clear();
+            RefreshTrayMenu();
         }
 
         private static void EnsurePalisadeIsVisible(View.Palisade palisade)

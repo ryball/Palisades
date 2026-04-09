@@ -2,8 +2,10 @@
 using Palisades.Model;
 using Palisades.View;
 using Palisades.ViewModel;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Xml.Serialization;
 
 namespace Palisades
@@ -17,24 +19,91 @@ namespace Palisades
             string saveDirectory = PDirectory.GetPalisadesDirectory();
             PDirectory.EnsureExists(saveDirectory);
 
-            List<PalisadeModel> loadedModels = new();
+            List<(string DirectoryPath, PalisadeModel Model)> loadedEntries = new();
 
-            foreach (string identifierDirname in Directory.GetDirectories(saveDirectory))
+            foreach (string palisadeDirectory in Directory.GetDirectories(saveDirectory))
             {
-                XmlSerializer deserializer = new(typeof(PalisadeModel));
-                using StreamReader reader = new(Path.Combine(saveDirectory, identifierDirname, "state.xml"));
-                if (deserializer.Deserialize(reader) is PalisadeModel model)
+                string statePath = Path.Combine(palisadeDirectory, "state.xml");
+                if (!File.Exists(statePath))
                 {
-                    loadedModels.Add(model);
+                    continue;
                 }
-                reader.Close();
+
+                try
+                {
+                    XmlSerializer deserializer = new(typeof(PalisadeModel));
+                    using StreamReader reader = new(statePath);
+                    if (deserializer.Deserialize(reader) is PalisadeModel model)
+                    {
+                        loadedEntries.Add((palisadeDirectory, model));
+                    }
+                }
+                catch
+                {
+                    // Ignore invalid saved states and continue loading the rest.
+                }
             }
 
-            foreach (PalisadeModel loadedModel in loadedModels)
+            List<(string DirectoryPath, PalisadeModel Model)> placeholderEntries = loadedEntries
+                .Where(entry => IsPlaceholderFence(entry.Model))
+                .ToList();
+
+            if (placeholderEntries.Count > 0)
             {
+                if (loadedEntries.Count > placeholderEntries.Count)
+                {
+                    foreach ((string DirectoryPath, PalisadeModel _) in placeholderEntries)
+                    {
+                        DeleteSavedFenceDirectory(DirectoryPath);
+                    }
+
+                    loadedEntries = loadedEntries
+                        .Where(entry => !IsPlaceholderFence(entry.Model))
+                        .ToList();
+                }
+                else if (placeholderEntries.Count > 1)
+                {
+                    foreach ((string DirectoryPath, PalisadeModel _) in placeholderEntries.Skip(1))
+                    {
+                        DeleteSavedFenceDirectory(DirectoryPath);
+                    }
+
+                    loadedEntries = placeholderEntries.Take(1).ToList();
+                }
+            }
+
+            foreach ((string _, PalisadeModel loadedModel) in loadedEntries)
+            {
+                if (palisades.ContainsKey(loadedModel.Identifier))
+                {
+                    continue;
+                }
+
                 palisades.Add(loadedModel.Identifier, new Palisade(new PalisadeViewModel(loadedModel)));
             }
+        }
 
+        private static bool IsPlaceholderFence(PalisadeModel model)
+        {
+            return string.Equals(model.Name?.Trim(), "No name", StringComparison.OrdinalIgnoreCase)
+                && (model.Shortcuts == null || model.Shortcuts.Count == 0);
+        }
+
+        private static void DeleteSavedFenceDirectory(string directoryPath)
+        {
+            if (!Directory.Exists(directoryPath))
+            {
+                return;
+            }
+
+            try
+            {
+                Directory.Delete(directoryPath, true);
+            }
+            catch
+            {
+                // Best-effort cleanup only.
+            }
         }
 
         private static void LoadPalisade(PalisadeViewModel initialModel)
@@ -48,6 +117,33 @@ namespace Palisades
             PalisadeViewModel viewModel = new();
             palisades.Add(viewModel.Identifier, new Palisade(viewModel));
             viewModel.Save();
+        }
+
+        public static void HidePalisade(string identifier)
+        {
+            palisades.TryGetValue(identifier, out Palisade? palisade);
+            palisade?.Hide();
+        }
+
+        public static void ShowPalisade(string identifier)
+        {
+            palisades.TryGetValue(identifier, out Palisade? palisade);
+            if (palisade == null)
+            {
+                return;
+            }
+
+            if (!palisade.IsVisible)
+            {
+                palisade.Show();
+            }
+
+            if (palisade.WindowState == System.Windows.WindowState.Minimized)
+            {
+                palisade.WindowState = System.Windows.WindowState.Normal;
+            }
+
+            palisade.Activate();
         }
 
         public static void DeletePalisade(string identifier)

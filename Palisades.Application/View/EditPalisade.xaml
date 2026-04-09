@@ -20,9 +20,6 @@
         Style="{StaticResource MaterialDesignWindow}"
         ResizeMode="NoResize"
         ShowInTaskbar="False">
-    <Window.DataContext>
-        <viewModel:PalisadeViewModel />
-    </Window.DataContext>
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
