@@ -13,6 +13,13 @@ Palisades now uses a clean, flat layout inside each fence.
 - Use separate fences like **Games**, **Tools**, or **Work** for your main categories.
 - Drag shortcuts directly into the fence where you want them.
 - Reorder shortcuts within the fence by dragging them.
+- Right-click a fence header and use **Join as tabs with** to merge two or more fences into one tabbed window.
+- Joined fences now show a clearer **tab strip** in the header so the active fence reads more like a real tabbed view.
+- Switching tabs now keeps each tab in the **same position** instead of moving the active one to the left.
+- You can **drag tabs left or right** inside the header to reorder them manually.
+- You can also **drag a tab out of the header** to detach it into its own standalone fence.
+- You can also drag one fence onto another to join them automatically as tabs.
+- Use **Split tab out** to turn the current tab back into its own standalone fence again.
 - Use the **−** button in the title bar, or right-click the header and choose **Collapse to title bar**, to shrink a fence down to just its header.
 - Use the same button or **Expand fence** to restore the full fence.
 - If you use multiple Windows virtual desktops, right-click the fence header and use **Visible on desktops** to choose exactly which named desktops should show that fence.
@@ -20,6 +27,7 @@ Palisades now uses a clean, flat layout inside each fence.
 - Right-click the fence header and use **Types → Add type...** to create custom types like `Game`, `Tool`, or `Work`.
 - Right-click any shortcut icon and use **Type** to assign one of those types, **Add type and assign...**, or **Clear type**.
 - Assigned types now show as a small badge under each icon so the category is visible at a glance.
+- Press **Delete** to remove the currently selected shortcut; modifier keys like `Ctrl` no longer remove icons.
 - Right-click the fence header and use **Sort** to order shortcuts by **Name (A to Z)**, **Name (Z to A)**, or **Type**.
 
 ## System tray behavior

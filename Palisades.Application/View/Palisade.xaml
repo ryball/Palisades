@@ -31,10 +31,48 @@
         <converters:PathToImageConverter x:Key="PathToImage" />
         <converters:MultiValueEqualityConverter x:Key="MultiValueEqualityConverter" />
         <helpers:BindingProxy x:Key="proxy" Data="{Binding}" />
+        <Style x:Key="JoinedTabButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Margin" Value="2,8,2,0" />
+            <Setter Property="Padding" Value="14,5,14,6" />
+            <Setter Property="MinWidth" Value="80" />
+            <Setter Property="BorderThickness" Value="1,1,1,0" />
+            <Setter Property="BorderBrush" Value="#4C000000" />
+            <Setter Property="Background" Value="#22000000" />
+            <Setter Property="FontWeight" Value="Normal" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10,10,0,0"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#3AFFFFFF" />
+                </Trigger>
+                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                    <Setter Property="Margin" Value="2,4,2,-1" />
+                    <Setter Property="Padding" Value="16,6,16,7" />
+                    <Setter Property="Background" Value="#80FFFFFF" />
+                    <Setter Property="BorderBrush" Value="#80FFFFFF" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                    <Setter Property="Panel.ZIndex" Value="5" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="KeyDown" >
-            <i:InvokeCommandAction Command="{Binding DelKeyPressed}" CommandParameter="{Binding}" />
+            <i:InvokeCommandAction Command="{Binding DelKeyPressed}" PassEventArgsToCommand="True" />
         </i:EventTrigger>
     </i:Interaction.Triggers>
     <Border x:Name="LayoutRoot" CornerRadius="20">
@@ -44,6 +82,17 @@
                     <ContextMenu>
                         <MenuItem Header="Edit" Command="{Binding Path=Data.EditPalisadeCommand, Source={StaticResource proxy}}" CommandParameter="{Binding}" />
                         <MenuItem Header="Hide fence" Command="{Binding Path=Data.HidePalisadeCommand, Source={StaticResource proxy}}" CommandParameter="{Binding Identifier}" />
+                        <MenuItem Header="Join as tabs with" ItemsSource="{Binding Path=Data.AvailableJoinTargets, Source={StaticResource proxy}}">
+                            <MenuItem.ItemContainerStyle>
+                                <Style TargetType="{x:Type MenuItem}">
+                                    <Setter Property="Header" Value="{Binding Name}" />
+                                    <Setter Property="Command" Value="{Binding Path=Data.JoinPalisadeAsTabCommand, Source={StaticResource proxy}}" />
+                                    <Setter Property="CommandParameter" Value="{Binding Identifier}" />
+                                </Style>
+                            </MenuItem.ItemContainerStyle>
+                        </MenuItem>
+                        <MenuItem Header="Split tab out" Command="{Binding Path=Data.SplitTabbedFenceCommand, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.HasTabbedGroup, Source={StaticResource proxy}}" />
+                        <Separator />
                         <MenuItem Header="Visible on desktops" ItemsSource="{Binding Path=Data.AvailableDesktopTargets, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.SupportsMultipleDesktops, Source={StaticResource proxy}}">
                             <MenuItem.ItemContainerStyle>
                                 <Style TargetType="{x:Type MenuItem}">
@@ -83,23 +132,61 @@
                     </ContextMenu>
                 </Grid.ContextMenu>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="12"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Rectangle Grid.ColumnSpan="3">
                     <Rectangle.Fill>
                         <SolidColorBrush Color="{Binding HeaderColor}" />
                     </Rectangle.Fill>
                 </Rectangle>
-                <Label Grid.Column="1" Content="{Binding Name, Mode=OneWay}" Margin="5" FontSize="{Binding TitleFontSize}" Foreground="{Binding TitleColor}" HorizontalAlignment="Center" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-                    <Label.Style>
-                        <Style TargetType="Label">
-                            <Setter Property="Padding" Value="0" />
-                            <Setter Property="MaxHeight" Value="100" />
-                        </Style>
-                    </Label.Style>
-                </Label>
+                <Grid Grid.Column="1" Margin="8,0,8,0" ClipToBounds="False">
+                    <Label Content="{Binding Name, Mode=OneWay}" Visibility="{Binding TitleVisibility}" FontSize="{Binding TitleFontSize}" Foreground="{Binding TitleColor}" HorizontalAlignment="Center" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                        <Label.Style>
+                            <Style TargetType="Label">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="MaxHeight" Value="100" />
+                            </Style>
+                        </Label.Style>
+                    </Label>
+                    <Grid Visibility="{Binding TabStripVisibility}" VerticalAlignment="Bottom" Margin="0,4,0,0">
+                        <Border Height="1"
+                                Margin="4,0,4,1"
+                                VerticalAlignment="Bottom"
+                                Background="#40000000" />
+                        <ScrollViewer HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Disabled"
+                                      HorizontalAlignment="Left"
+                                      VerticalAlignment="Bottom"
+                                      CanContentScroll="False">
+                            <ItemsControl ItemsSource="{Binding JoinedTabs}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource JoinedTabButtonStyle}"
+                                                Foreground="{Binding DataContext.TitleColor, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                                Command="{Binding Path=Data.SelectJoinedTabCommand, Source={StaticResource proxy}}"
+                                                CommandParameter="{Binding Identifier}"
+                                                PreviewMouseLeftButtonDown="TabButton_PreviewMouseLeftButtonDown"
+                                                PreviewMouseMove="TabButton_PreviewMouseMove"
+                                                DragOver="TabButton_DragOver"
+                                                Drop="TabButton_Drop"
+                                                AllowDrop="True"
+                                                ToolTip="Drag left/right to reorder, or drag out to detach"
+                                                Cursor="Hand">
+                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" MaxWidth="160" />
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
                 <Button Grid.Column="2"
                         Width="28"
                         Height="28"

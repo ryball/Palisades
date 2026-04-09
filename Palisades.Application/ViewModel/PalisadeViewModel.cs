@@ -44,7 +44,64 @@ namespace Palisades.ViewModel
         public string Name
         {
             get { return model.Name; }
-            set { model.Name = value; OnPropertyChanged(); Save(); }
+            set
+            {
+                model.Name = value;
+                OnPropertyChanged();
+                RefreshTabbedState();
+                Save();
+            }
+        }
+
+        public string TabGroupId
+        {
+            get { return model.TabGroupId; }
+            set
+            {
+                string normalized = string.IsNullOrWhiteSpace(value) ? Identifier : value.Trim();
+                if (string.Equals(model.TabGroupId, normalized, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                model.TabGroupId = normalized;
+                RefreshTabbedState();
+                Save();
+            }
+        }
+
+        public string ActiveTabIdentifier
+        {
+            get { return model.ActiveTabIdentifier; }
+            set
+            {
+                string normalized = string.IsNullOrWhiteSpace(value) ? Identifier : value.Trim();
+                if (string.Equals(model.ActiveTabIdentifier, normalized, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                model.ActiveTabIdentifier = normalized;
+                RefreshTabbedState();
+                Save();
+            }
+        }
+
+        public int TabOrder
+        {
+            get { return model.TabOrder; }
+            set
+            {
+                int normalized = Math.Max(0, value);
+                if (model.TabOrder == normalized)
+                {
+                    return;
+                }
+
+                model.TabOrder = normalized;
+                RefreshTabbedState();
+                Save();
+            }
         }
 
         public int FenceX
@@ -177,6 +234,31 @@ namespace Palisades.ViewModel
                     })
                     .ToList();
             }
+        }
+
+        public IEnumerable<PalisadeTabInfo> JoinedTabs
+        {
+            get { return PalisadesManager.GetJoinedTabsFor(Identifier); }
+        }
+
+        public IEnumerable<PalisadeTabInfo> AvailableJoinTargets
+        {
+            get { return PalisadesManager.GetJoinTargetsFor(Identifier); }
+        }
+
+        public bool HasTabbedGroup
+        {
+            get { return JoinedTabs.Skip(1).Any(); }
+        }
+
+        public Visibility TabStripVisibility
+        {
+            get { return HasTabbedGroup ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public Visibility TitleVisibility
+        {
+            get { return HasTabbedGroup ? Visibility.Collapsed : Visibility.Visible; }
         }
 
         public ResizeMode WindowResizeMode
@@ -324,6 +406,7 @@ namespace Palisades.ViewModel
             OnPropertyChanged(nameof(AvailableGroups));
             OnPropertyChanged(nameof(AvailableTypes));
             OnPropertyChanged(nameof(AvailableDesktopTargets));
+            RefreshTabbedState();
             Save();
 
             Thread saveThread = new(SaveAsync)
@@ -338,6 +421,20 @@ namespace Palisades.ViewModel
         public void Save()
         {
             shouldSave = true;
+        }
+
+        public void RefreshTabbedState()
+        {
+            OnPropertyChanged(nameof(JoinedTabs));
+            OnPropertyChanged(nameof(AvailableJoinTargets));
+            OnPropertyChanged(nameof(HasTabbedGroup));
+            OnPropertyChanged(nameof(TabStripVisibility));
+            OnPropertyChanged(nameof(TitleVisibility));
+        }
+
+        public bool IsHiddenByUser
+        {
+            get { return isHiddenByUser; }
         }
 
         public void SetHiddenByUser(bool isHidden)
@@ -796,6 +893,30 @@ namespace Palisades.ViewModel
 
         public ICommand HidePalisadeCommand { get; private set; } = new RelayCommand<string>((identifier) => PalisadesManager.HidePalisade(identifier));
 
+        public ICommand JoinPalisadeAsTabCommand
+        {
+            get
+            {
+                return new RelayCommand<string>((identifier) => PalisadesManager.JoinPalisadesAsTabs(Identifier, identifier));
+            }
+        }
+
+        public ICommand SelectJoinedTabCommand
+        {
+            get
+            {
+                return new RelayCommand<string>(PalisadesManager.ActivateTabbedFence);
+            }
+        }
+
+        public ICommand SplitTabbedFenceCommand
+        {
+            get
+            {
+                return new RelayCommand(() => PalisadesManager.SplitPalisadeFromTabs(Identifier), () => HasTabbedGroup);
+            }
+        }
+
         public ICommand MovePalisadeToDesktopCommand
         {
             get
@@ -999,8 +1120,25 @@ namespace Palisades.ViewModel
         {
             get
             {
-                return new RelayCommand(DeleteShortcut);
+                return new RelayCommand<KeyEventArgs>(HandleShortcutKeyPressed);
             }
+        }
+
+        public void HandleShortcutKeyPressed(KeyEventArgs? keyEventArgs)
+        {
+            if (keyEventArgs == null)
+            {
+                return;
+            }
+
+            Key pressedKey = keyEventArgs.Key == Key.System ? keyEventArgs.SystemKey : keyEventArgs.Key;
+            if (pressedKey != Key.Delete)
+            {
+                return;
+            }
+
+            DeleteShortcut();
+            keyEventArgs.Handled = true;
         }
 
         public void DeleteShortcut()

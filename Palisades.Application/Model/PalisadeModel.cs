@@ -31,6 +31,9 @@ namespace Palisades.Model
 
         private string identifier;
         private string name;
+        private string tabGroupId;
+        private string activeTabIdentifier;
+        private int tabOrder;
         private int fenceX;
         private int fenceY;
         private int width;
@@ -50,6 +53,9 @@ namespace Palisades.Model
         {
             identifier = Guid.NewGuid().ToString();
             name = "No name";
+            tabGroupId = identifier;
+            activeTabIdentifier = identifier;
+            tabOrder = 0;
             headerColor = Color.FromArgb(200, 0, 0, 0);
             bodyColor = Color.FromArgb(120, 0, 0, 0);
             titleColor = Color.FromArgb(255, 255, 255, 255);
@@ -66,6 +72,9 @@ namespace Palisades.Model
 
         public string Identifier { get { return identifier; } set { identifier = value; } }
         public string Name { get { return name; } set { name = value; } }
+        public string TabGroupId { get { return string.IsNullOrWhiteSpace(tabGroupId) ? Identifier : tabGroupId; } set { tabGroupId = string.IsNullOrWhiteSpace(value) ? Identifier : value.Trim(); } }
+        public string ActiveTabIdentifier { get { return string.IsNullOrWhiteSpace(activeTabIdentifier) ? Identifier : activeTabIdentifier; } set { activeTabIdentifier = string.IsNullOrWhiteSpace(value) ? Identifier : value.Trim(); } }
+        public int TabOrder { get { return tabOrder < 0 ? 0 : tabOrder; } set { tabOrder = Math.Max(0, value); } }
 
         public int FenceX { get { return fenceX; } set { fenceX = value; } }
         public int FenceY { get { return fenceY; } set { fenceY = value; } }
@@ -98,6 +107,9 @@ namespace Palisades.Model
         {
             headerHeight = HeaderHeight;
             height = Math.Max(height, HeaderHeight);
+            tabGroupId = TabGroupId;
+            activeTabIdentifier = ActiveTabIdentifier;
+            tabOrder = TabOrder;
             shortcuts ??= new();
             groupStates ??= new();
             types ??= new();
