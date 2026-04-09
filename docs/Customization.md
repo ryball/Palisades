@@ -15,7 +15,8 @@ Palisades now uses a clean, flat layout inside each fence.
 - Reorder shortcuts within the fence by dragging them.
 - Use the **−** button in the title bar, or right-click the header and choose **Collapse to title bar**, to shrink a fence down to just its header.
 - Use the same button or **Expand fence** to restore the full fence.
-- If you use multiple Windows virtual desktops, right-click the fence header and use **Move to desktop** to send that fence to a specific named desktop.
+- If you use multiple Windows virtual desktops, right-click the fence header and use **Visible on desktops** to choose exactly which named desktops should show that fence.
+- Use **Move to desktop** when you want to send the fence to one specific desktop immediately.
 - Right-click the fence header and use **Types → Add type...** to create custom types like `Game`, `Tool`, or `Work`.
 - Right-click any shortcut icon and use **Type** to assign one of those types, **Add type and assign...**, or **Clear type**.
 - Assigned types now show as a small badge under each icon so the category is visible at a glance.

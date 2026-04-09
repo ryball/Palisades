@@ -44,6 +44,17 @@
                     <ContextMenu>
                         <MenuItem Header="Edit" Command="{Binding Path=Data.EditPalisadeCommand, Source={StaticResource proxy}}" CommandParameter="{Binding}" />
                         <MenuItem Header="Hide fence" Command="{Binding Path=Data.HidePalisadeCommand, Source={StaticResource proxy}}" CommandParameter="{Binding Identifier}" />
+                        <MenuItem Header="Visible on desktops" ItemsSource="{Binding Path=Data.AvailableDesktopTargets, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.SupportsMultipleDesktops, Source={StaticResource proxy}}">
+                            <MenuItem.ItemContainerStyle>
+                                <Style TargetType="{x:Type MenuItem}">
+                                    <Setter Property="Header" Value="{Binding DisplayName}" />
+                                    <Setter Property="IsCheckable" Value="True" />
+                                    <Setter Property="IsChecked" Value="{Binding IsSelected}" />
+                                    <Setter Property="Command" Value="{Binding Path=Data.ToggleDesktopVisibilityCommand, Source={StaticResource proxy}}" />
+                                    <Setter Property="CommandParameter" Value="{Binding DesktopId}" />
+                                </Style>
+                            </MenuItem.ItemContainerStyle>
+                        </MenuItem>
                         <MenuItem Header="Move to desktop" ItemsSource="{Binding Path=Data.AvailableDesktopTargets, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.SupportsMultipleDesktops, Source={StaticResource proxy}}">
                             <MenuItem.ItemContainerStyle>
                                 <Style TargetType="{x:Type MenuItem}">

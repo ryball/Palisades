@@ -16,6 +16,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Xml.Serialization;
 
@@ -30,6 +31,7 @@ namespace Palisades.ViewModel
         private ICollectionView groupedShortcuts = null!;
         private volatile bool shouldSave;
         private Shortcut? selectedShortcut;
+        private bool isHiddenByUser;
         #endregion
 
         #region Accessors
@@ -163,7 +165,18 @@ namespace Palisades.ViewModel
 
         public IEnumerable<VirtualDesktopInfo> AvailableDesktopTargets
         {
-            get { return VirtualDesktopHelper.GetDesktops(); }
+            get
+            {
+                return VirtualDesktopHelper.GetDesktops()
+                    .Select(desktop => new VirtualDesktopInfo
+                    {
+                        DesktopId = desktop.DesktopId,
+                        Name = desktop.Name,
+                        IsCurrent = desktop.IsCurrent,
+                        IsSelected = IsVisibleOnDesktop(desktop.DesktopId)
+                    })
+                    .ToList();
+            }
         }
 
         public ResizeMode WindowResizeMode
@@ -301,6 +314,7 @@ namespace Palisades.ViewModel
         {
             this.model = model;
             this.model.EnsureDefaults();
+            EnsureCurrentDesktopAssignment();
 
             SubscribeToShortcuts(this.model.Shortcuts);
             ConfigureGroupedShortcuts();
@@ -309,6 +323,7 @@ namespace Palisades.ViewModel
             OnPropertyChanged(nameof(GroupedShortcuts));
             OnPropertyChanged(nameof(AvailableGroups));
             OnPropertyChanged(nameof(AvailableTypes));
+            OnPropertyChanged(nameof(AvailableDesktopTargets));
             Save();
 
             Thread saveThread = new(SaveAsync)
@@ -325,6 +340,112 @@ namespace Palisades.ViewModel
             shouldSave = true;
         }
 
+        public void SetHiddenByUser(bool isHidden)
+        {
+            isHiddenByUser = isHidden;
+        }
+
+        public bool IsVisibleOnDesktop(string? desktopId)
+        {
+            string normalized = NormalizeDesktopId(desktopId);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return true;
+            }
+
+            if (model.VisibleDesktopIds.Count == 0)
+            {
+                return true;
+            }
+
+            return model.VisibleDesktopIds.Any(id => string.Equals(id, normalized, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public void ApplyDesktopVisibility(View.Palisade palisade, string? currentDesktopId)
+        {
+            if (!SupportsMultipleDesktops)
+            {
+                return;
+            }
+
+            string normalizedDesktopId = NormalizeDesktopId(currentDesktopId);
+            if (string.IsNullOrWhiteSpace(normalizedDesktopId))
+            {
+                return;
+            }
+
+            bool shouldBeVisible = IsVisibleOnDesktop(normalizedDesktopId);
+            IntPtr windowHandle = new WindowInteropHelper(palisade).Handle;
+
+            if (shouldBeVisible)
+            {
+                if (windowHandle != IntPtr.Zero && Guid.TryParse(normalizedDesktopId, out Guid currentDesktopGuid))
+                {
+                    VirtualDesktopHelper.TryMoveWindowToDesktop(windowHandle, currentDesktopGuid);
+                }
+
+                if (!isHiddenByUser)
+                {
+                    if (!palisade.IsVisible)
+                    {
+                        palisade.Show();
+                    }
+
+                    if (palisade.WindowState == WindowState.Minimized)
+                    {
+                        palisade.WindowState = WindowState.Normal;
+                    }
+                }
+            }
+            else if (palisade.IsVisible)
+            {
+                palisade.Hide();
+            }
+        }
+
+        public void ToggleDesktopVisibility(string? desktopId)
+        {
+            string normalized = NormalizeDesktopId(desktopId);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return;
+            }
+
+            string? existing = model.VisibleDesktopIds.FirstOrDefault(id => string.Equals(id, normalized, StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                if (model.VisibleDesktopIds.Count == 1)
+                {
+                    return;
+                }
+
+                model.VisibleDesktopIds.Remove(existing);
+            }
+            else
+            {
+                model.VisibleDesktopIds.Add(normalized);
+            }
+
+            OnPropertyChanged(nameof(AvailableDesktopTargets));
+            Save();
+            PalisadesManager.ApplyDesktopVisibilityForCurrentDesktop();
+        }
+
+        private void EnsureCurrentDesktopAssignment()
+        {
+            if (!SupportsMultipleDesktops || model.VisibleDesktopIds.Count > 0)
+            {
+                return;
+            }
+
+            string currentDesktopId = NormalizeDesktopId(VirtualDesktopHelper.GetCurrentDesktopIdString());
+            if (string.IsNullOrWhiteSpace(currentDesktopId))
+            {
+                return;
+            }
+
+            model.VisibleDesktopIds.Add(currentDesktopId);
+        }
 
         public void Delete()
         {
@@ -576,6 +697,11 @@ namespace Palisades.ViewModel
             return string.IsNullOrWhiteSpace(groupName) ? PalisadeModel.DefaultGroupName : groupName.Trim();
         }
 
+        private static string NormalizeDesktopId(string? desktopId)
+        {
+            return Guid.TryParse(desktopId, out Guid parsedDesktopId) ? parsedDesktopId.ToString() : string.Empty;
+        }
+
         private static List<Shortcut> GetDraggedShortcuts(object? data)
         {
             if (data is Shortcut shortcut)
@@ -675,6 +801,14 @@ namespace Palisades.ViewModel
             get
             {
                 return new RelayCommand<string>((desktopId) => PalisadesManager.MovePalisadeToDesktop(Identifier, desktopId), () => VirtualDesktopHelper.HasMultipleDesktops());
+            }
+        }
+
+        public ICommand ToggleDesktopVisibilityCommand
+        {
+            get
+            {
+                return new RelayCommand<string>(ToggleDesktopVisibility, () => VirtualDesktopHelper.HasMultipleDesktops());
             }
         }
 

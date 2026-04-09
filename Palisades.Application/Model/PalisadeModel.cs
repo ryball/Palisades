@@ -40,6 +40,7 @@ namespace Palisades.Model
         private ObservableCollection<Shortcut> shortcuts;
         private ObservableCollection<PalisadeGroupState> groupStates;
         private ObservableCollection<string> types;
+        private ObservableCollection<string> visibleDesktopIds;
         private Color headerColor;
         private Color bodyColor;
         private Color titleColor;
@@ -60,6 +61,7 @@ namespace Palisades.Model
             shortcuts = new();
             groupStates = new();
             types = new();
+            visibleDesktopIds = new();
         }
 
         public string Identifier { get { return identifier; } set { identifier = value; } }
@@ -90,6 +92,8 @@ namespace Palisades.Model
 
         public ObservableCollection<string> Types { get { return types; } set { types = value ?? new(); } }
 
+        public ObservableCollection<string> VisibleDesktopIds { get { return visibleDesktopIds; } set { visibleDesktopIds = value ?? new(); } }
+
         public void EnsureDefaults()
         {
             headerHeight = HeaderHeight;
@@ -97,6 +101,7 @@ namespace Palisades.Model
             shortcuts ??= new();
             groupStates ??= new();
             types ??= new();
+            visibleDesktopIds ??= new();
 
             foreach (Shortcut shortcut in shortcuts)
             {
@@ -134,6 +139,18 @@ namespace Palisades.Model
             foreach (PalisadeGroupState state in groupStates.Where(state => state != null))
             {
                 state.GroupName = state.GroupName;
+            }
+
+            for (int i = visibleDesktopIds.Count - 1; i >= 0; i--)
+            {
+                string normalizedDesktopId = NormalizeDesktopId(visibleDesktopIds[i]);
+                if (string.IsNullOrWhiteSpace(normalizedDesktopId))
+                {
+                    visibleDesktopIds.RemoveAt(i);
+                    continue;
+                }
+
+                visibleDesktopIds[i] = normalizedDesktopId;
             }
         }
 
@@ -176,6 +193,11 @@ namespace Palisades.Model
         private static string NormalizeType(string? typeName)
         {
             return string.IsNullOrWhiteSpace(typeName) ? string.Empty : typeName.Trim();
+        }
+
+        private static string NormalizeDesktopId(string? desktopId)
+        {
+            return Guid.TryParse(desktopId, out Guid parsedDesktopId) ? parsedDesktopId.ToString() : string.Empty;
         }
     }
 }

@@ -20,6 +20,8 @@ namespace Palisades
 
         private const string AppUserModelId = "io.stouder.Palisades";
         private readonly HashSet<string> lastHiddenPalisadeIdentifiers = new(StringComparer.OrdinalIgnoreCase);
+        private readonly DispatcherTimer desktopMonitorTimer = new() { Interval = TimeSpan.FromMilliseconds(800) };
+        private string lastKnownDesktopId = string.Empty;
         private Forms.NotifyIcon? trayIcon;
         private Forms.ContextMenuStrip? trayMenu;
 
@@ -41,6 +43,8 @@ namespace Palisades
             {
                 PalisadesManager.CreatePalisade();
             }
+
+            StartDesktopMonitor();
 
             Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -72,6 +76,29 @@ namespace Palisades
             trayIcon.Visible = false;
             trayIcon.Visible = true;
             trayIcon.DoubleClick += (_, _) => Dispatcher.Invoke(ShowAllPalisades);
+        }
+
+        private void StartDesktopMonitor()
+        {
+            desktopMonitorTimer.Stop();
+            desktopMonitorTimer.Tick -= DesktopMonitorTimer_Tick;
+            desktopMonitorTimer.Tick += DesktopMonitorTimer_Tick;
+            lastKnownDesktopId = VirtualDesktopHelper.GetCurrentDesktopIdString();
+            PalisadesManager.ApplyDesktopVisibilityForCurrentDesktop();
+            desktopMonitorTimer.Start();
+        }
+
+        private void DesktopMonitorTimer_Tick(object? sender, EventArgs e)
+        {
+            string currentDesktopId = VirtualDesktopHelper.GetCurrentDesktopIdString();
+            if (string.Equals(currentDesktopId, lastKnownDesktopId, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            lastKnownDesktopId = currentDesktopId;
+            PalisadesManager.ApplyDesktopVisibilityForCurrentDesktop();
+            RefreshTrayMenu();
         }
 
         private void RefreshTrayMenu()
@@ -119,23 +146,12 @@ namespace Palisades
             if (palisade.IsVisible)
             {
                 lastHiddenPalisadeIdentifiers.Add(identifier);
-                palisade.Hide();
+                PalisadesManager.HidePalisade(identifier);
             }
             else
             {
                 EnsurePalisadeIsVisible(palisade);
-
-                if (!palisade.IsVisible)
-                {
-                    palisade.Show();
-                }
-
-                if (palisade.WindowState == WindowState.Minimized)
-                {
-                    palisade.WindowState = WindowState.Normal;
-                }
-
-                palisade.Activate();
+                PalisadesManager.ShowPalisade(identifier);
                 lastHiddenPalisadeIdentifiers.Remove(identifier);
             }
 
@@ -144,8 +160,14 @@ namespace Palisades
 
         private void ShowAllPalisades()
         {
-            foreach (View.Palisade palisade in PalisadesManager.palisades.Values.ToList())
+            foreach (KeyValuePair<string, View.Palisade> entry in PalisadesManager.palisades.ToList())
             {
+                View.Palisade palisade = entry.Value;
+                if (palisade.DataContext is PalisadeViewModel viewModel)
+                {
+                    viewModel.SetHiddenByUser(false);
+                }
+
                 EnsurePalisadeIsVisible(palisade);
 
                 if (!palisade.IsVisible)
@@ -160,6 +182,8 @@ namespace Palisades
 
                 palisade.Activate();
             }
+
+            PalisadesManager.ApplyDesktopVisibilityForCurrentDesktop();
 
             lastHiddenPalisadeIdentifiers.Clear();
             RefreshTrayMenu();
@@ -172,6 +196,11 @@ namespace Palisades
             foreach (KeyValuePair<string, View.Palisade> entry in PalisadesManager.palisades.ToList())
             {
                 View.Palisade palisade = entry.Value;
+                if (palisade.DataContext is PalisadeViewModel viewModel)
+                {
+                    viewModel.SetHiddenByUser(true);
+                }
+
                 if (palisade.IsVisible)
                 {
                     lastHiddenPalisadeIdentifiers.Add(entry.Key);
@@ -198,6 +227,11 @@ namespace Palisades
                     continue;
                 }
 
+                if (palisade.DataContext is PalisadeViewModel viewModel)
+                {
+                    viewModel.SetHiddenByUser(false);
+                }
+
                 EnsurePalisadeIsVisible(palisade);
 
                 if (!palisade.IsVisible)
@@ -212,6 +246,8 @@ namespace Palisades
 
                 palisade.Activate();
             }
+
+            PalisadesManager.ApplyDesktopVisibilityForCurrentDesktop();
 
             lastHiddenPalisadeIdentifiers.Clear();
             RefreshTrayMenu();
@@ -266,6 +302,7 @@ namespace Palisades
 
         protected override void OnExit(ExitEventArgs e)
         {
+            desktopMonitorTimer.Stop();
             trayIcon?.Dispose();
             trayIcon = null;
             base.OnExit(e);

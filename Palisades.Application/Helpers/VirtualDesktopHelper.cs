@@ -10,6 +10,7 @@ namespace Palisades.Helpers
         public string DesktopId { get; init; } = string.Empty;
         public string Name { get; init; } = string.Empty;
         public bool IsCurrent { get; init; }
+        public bool IsSelected { get; init; }
         public bool CanMoveTo { get { return !IsCurrent; } }
         public string DisplayName { get { return IsCurrent ? $"{Name} (current)" : Name; } }
     }
@@ -129,7 +130,7 @@ namespace Palisades.Helpers
             }
         }
 
-        private static Guid GetCurrentDesktopId()
+        public static Guid GetCurrentDesktopId()
         {
             try
             {
@@ -147,6 +148,12 @@ namespace Palisades.Helpers
             }
 
             return Guid.Empty;
+        }
+
+        public static string GetCurrentDesktopIdString()
+        {
+            Guid currentDesktopId = GetCurrentDesktopId();
+            return currentDesktopId == Guid.Empty ? string.Empty : currentDesktopId.ToString();
         }
 
         private static Dictionary<Guid, string> GetDesktopNames()

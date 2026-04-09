@@ -118,12 +118,35 @@ namespace Palisades
             PalisadeViewModel viewModel = new();
             palisades.Add(viewModel.Identifier, new Palisade(viewModel));
             viewModel.Save();
+            ApplyDesktopVisibilityForCurrentDesktop();
+        }
+
+        public static void ApplyDesktopVisibilityForCurrentDesktop()
+        {
+            string currentDesktopId = VirtualDesktopHelper.GetCurrentDesktopIdString();
+            foreach (KeyValuePair<string, Palisade> entry in palisades.ToList())
+            {
+                if (entry.Value.DataContext is PalisadeViewModel viewModel)
+                {
+                    viewModel.ApplyDesktopVisibility(entry.Value, currentDesktopId);
+                }
+            }
         }
 
         public static void HidePalisade(string identifier)
         {
             palisades.TryGetValue(identifier, out Palisade? palisade);
-            palisade?.Hide();
+            if (palisade == null)
+            {
+                return;
+            }
+
+            if (palisade.DataContext is PalisadeViewModel viewModel)
+            {
+                viewModel.SetHiddenByUser(true);
+            }
+
+            palisade.Hide();
         }
 
         public static void ShowPalisade(string identifier)
@@ -132,6 +155,11 @@ namespace Palisades
             if (palisade == null)
             {
                 return;
+            }
+
+            if (palisade.DataContext is PalisadeViewModel viewModel)
+            {
+                viewModel.SetHiddenByUser(false);
             }
 
             if (!palisade.IsVisible)
