@@ -18,7 +18,7 @@
         Height="{Binding Height, Mode=TwoWay}"
         AllowsTransparency="True"
         WindowStyle="None"
-        ResizeMode="CanResize"
+        ResizeMode="{Binding WindowResizeMode}"
         Background="Transparent"
         Left="{Binding FenceX, Mode=TwoWay}"
         Top="{Binding FenceY, Mode=TwoWay}"
@@ -42,10 +42,20 @@
     </i:Interaction.Triggers>
     <Border x:Name="LayoutRoot" CornerRadius="20">
         <DockPanel>
-            <Grid DockPanel.Dock="Top" x:Name="Header" MouseLeftButtonDown="Header_MouseLeftButtonDown" IsHitTestVisible="True" Background="#00000000" Tag="{Binding DataContext, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}">
+            <Grid DockPanel.Dock="Top" x:Name="Header" Height="{Binding HeaderHeight}" MinHeight="36" MouseLeftButtonDown="Header_MouseLeftButtonDown" IsHitTestVisible="True" Background="#00000000" Tag="{Binding DataContext, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}">
                 <Grid.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="Edit" Command="{Binding Path=Data.EditPalisadeCommand, Source={StaticResource proxy}}" CommandParameter="{Binding}" />
+                        <MenuItem Header="{Binding Path=Data.CollapseMenuHeader, Source={StaticResource proxy}}" Command="{Binding Path=Data.ToggleCollapsedStateCommand, Source={StaticResource proxy}}" />
+                        <MenuItem Header="Types">
+                            <MenuItem Header="Add type..." Command="{Binding Path=Data.AddTypeCommand, Source={StaticResource proxy}}" />
+                        </MenuItem>
+                        <MenuItem Header="Sort">
+                            <MenuItem Header="Name (A to Z)" Command="{Binding Path=Data.SortByNameAscendingCommand, Source={StaticResource proxy}}" />
+                            <MenuItem Header="Name (Z to A)" Command="{Binding Path=Data.SortByNameDescendingCommand, Source={StaticResource proxy}}" />
+                            <Separator />
+                            <MenuItem Header="Type" Command="{Binding Path=Data.SortByTypeCommand, Source={StaticResource proxy}}" />
+                        </MenuItem>
                         <MenuItem Header="Delete" Command="{Binding Path=Data.DeletePalisadeCommand, Source={StaticResource proxy}}" CommandParameter="{Binding Identifier}" />
                         <Separator />
                         <MenuItem Header="New fence" Command="{Binding Path=Data.NewPalisadeCommand, Source={StaticResource proxy}}" />
@@ -63,9 +73,31 @@
                         <SolidColorBrush Color="{Binding HeaderColor}" />
                     </Rectangle.Fill>
                 </Rectangle>
-                <Label Grid.Column="1"  Content="{Binding Name, Mode=OneWay}" Margin="5" FontSize="32" Foreground="{Binding TitleColor}"  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Label Grid.Column="1" Content="{Binding Name, Mode=OneWay}" Margin="5" FontSize="{Binding TitleFontSize}" Foreground="{Binding TitleColor}" HorizontalAlignment="Center" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                    <Label.Style>
+                        <Style TargetType="Label">
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="MaxHeight" Value="100" />
+                        </Style>
+                    </Label.Style>
+                </Label>
+                <Button Grid.Column="2"
+                        Width="28"
+                        Height="28"
+                        Margin="0,0,10,0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Content="{Binding CollapseButtonText}"
+                        Command="{Binding ToggleCollapsedStateCommand}"
+                        ToolTip="{Binding CollapseMenuHeader}"
+                        FontSize="16"
+                        FontWeight="Bold"
+                        BorderThickness="0"
+                        Background="#22000000"
+                        Foreground="{Binding TitleColor}"
+                        Cursor="Hand" />
             </Grid>
-            <Grid x:Name="drag" AllowDrop="True">
+            <Grid x:Name="drag" AllowDrop="True" Visibility="{Binding BodyVisibility}">
                 <i:Interaction.Triggers>
                     <i:EventTrigger EventName="Drop">
                         <i:InvokeCommandAction Command="{Binding DropShortcut}" PassEventArgsToCommand="True" />
@@ -86,6 +118,21 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <ContentControl>
+                                    <ContentControl.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Type" ItemsSource="{Binding Path=Data.AvailableTypes, Source={StaticResource proxy}}">
+                                                <MenuItem.ItemContainerStyle>
+                                                    <Style TargetType="{x:Type MenuItem}">
+                                                        <Setter Property="Header" Value="{Binding}" />
+                                                        <Setter Property="Command" Value="{Binding Path=Data.AssignSelectedShortcutTypeCommand, Source={StaticResource proxy}}" />
+                                                        <Setter Property="CommandParameter" Value="{Binding}" />
+                                                    </Style>
+                                                </MenuItem.ItemContainerStyle>
+                                            </MenuItem>
+                                            <MenuItem Header="Add type and assign..." Command="{Binding Path=Data.AddTypeAndAssignToSelectedShortcutCommand, Source={StaticResource proxy}}" />
+                                            <MenuItem Header="Clear type" Command="{Binding Path=Data.ClearSelectedShortcutTypeCommand, Source={StaticResource proxy}}" />
+                                        </ContextMenu>
+                                    </ContentControl.ContextMenu>
                                     <i:Interaction.Triggers>
                                         <i:EventTrigger EventName="MouseDoubleClick" >
                                             <i:LaunchUriOrFileAction Path="{Binding UriOrFileAction}" />
@@ -93,8 +140,11 @@
                                         <i:EventTrigger EventName="MouseDown" >
                                             <i:InvokeCommandAction Command="{Binding Path=Data.ClickShortcut, Source={StaticResource proxy}}" CommandParameter="{Binding}" />
                                         </i:EventTrigger>
+                                        <i:EventTrigger EventName="PreviewMouseRightButtonDown" >
+                                            <i:InvokeCommandAction Command="{Binding Path=Data.SelectShortcutForContextMenuCommand, Source={StaticResource proxy}}" CommandParameter="{Binding}" />
+                                        </i:EventTrigger>
                                     </i:Interaction.Triggers>
-                                    <Border Margin="0,0,0,10" CornerRadius="4" Width="100">
+                                    <Border Margin="0,0,10,10" CornerRadius="4" Width="100">
                                         <Border.Style>
                                             <Style>
                                                 <Style.Triggers>
@@ -120,7 +170,20 @@
                                                 Height="48"
                                                 Stretch="UniformToFill" Margin="5,5,5,5"
                                             />
-                                            <TextBlock TextWrapping="NoWrap" TextAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding Name}" Foreground="{Binding DataContext.LabelsColor, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" HorizontalAlignment="Center" Margin="5,0,5,5" />
+                                            <TextBlock TextWrapping="NoWrap" TextAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding Name}" Foreground="{Binding DataContext.LabelsColor, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" HorizontalAlignment="Center" Margin="5,0,5,2" />
+                                            <Border HorizontalAlignment="Center" Margin="5,0,5,5" Padding="6,1" Background="#22000000" CornerRadius="8">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding TypeName}" Value="">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="{Binding TypeName}" FontSize="10" FontWeight="SemiBold" Foreground="{Binding DataContext.TitleColor, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" TextAlignment="Center" />
+                                            </Border>
                                         </StackPanel>
                                     </Border>
                                 </ContentControl>

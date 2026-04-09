@@ -9,7 +9,7 @@
         xmlns:converters="clr-namespace:Palisades.Converters"
         mc:Ignorable="d"
         Title="Edit Palisade"
-        Width="400"
+        Width="500"
         SizeToContent="Height"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         TextElement.FontWeight="Regular"
@@ -18,7 +18,8 @@
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}"
         Style="{StaticResource MaterialDesignWindow}"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
     <Window.DataContext>
         <viewModel:PalisadeViewModel />
     </Window.DataContext>
@@ -59,6 +60,8 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="10" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -76,6 +79,16 @@
 
         <Label Grid.Row="8" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Labels Color</Label>
         <colorpicker:PortableColorPicker Grid.Row="8" Grid.Column="2" SelectedColor="{Binding LabelsColor, Converter={StaticResource brushConverter}, Mode=TwoWay}" Width="80" HorizontalAlignment="Center" Style="{StaticResource DefaultColorPickerStyle}" />
+
+        <Label Grid.Row="10" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Title Bar Size</Label>
+        <StackPanel Grid.Row="10" Grid.Column="2" HorizontalAlignment="Stretch">
+            <DockPanel LastChildFill="False">
+                <Slider Width="210" Minimum="36" Maximum="120" TickFrequency="4" IsSnapToTickEnabled="True" Value="{Binding HeaderHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" />
+                <TextBox Width="60" Margin="10,0,0,0" Text="{Binding HeaderHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" />
+            </DockPanel>
+            <TextBlock Margin="0,6,0,0" HorizontalAlignment="Center" Text="{Binding HeaderHeight, StringFormat={}Current height: {0}px}" />
+        </StackPanel>
+
 
     </Grid>
 </Window>

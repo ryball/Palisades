@@ -27,11 +27,21 @@ Just download the latest installer on the [Releases](https://github.com/Xstoudi/
 
 - Drag and drop your shortcuts in a Palisade.
 - Reorder shortcuts in Palisades by drag and dropping them.
-- Individually customize name, background color and text colors for headers and body of your Palisades.
+- Individually customize the name, colors, and title bar size for each Palisade.
+- Keep each fence clean with a simple flat shortcut layout.
+- Add custom types from the fence right-click menu and assign them to individual icons.
+- Sort shortcuts from the fence right-click menu by name or type.
+- Show a Palisades icon in the Windows system tray with quick actions for showing, hiding, restoring, creating, and exiting fences.
 - Creating more and deleting existing Palisades.
 
 ## Usage
-Just drag and drop shortcuts in a Palisade to add it in. If you want to customize your Palisade or add a new one, right click on a Palisade header.
+Just drag and drop shortcuts in a Palisade to add it in. Right click on a Palisade header to edit it, then:
+
+- use the **Title Bar Size** control to resize the header,
+- right-click a shortcut and choose **Edit group...** or **Move to existing group**,
+- drag a shortcut onto another group's header/body to move it there,
+- keep the edit window open while selecting shortcuts to change their **Shortcut Group**,
+- collapse or expand groups directly from the fence body.
 
 ## Techs used
 
