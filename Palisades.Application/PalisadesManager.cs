@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Windows.Interop;
 using System.Xml.Serialization;
 
 namespace Palisades
@@ -144,6 +145,62 @@ namespace Palisades
             }
 
             palisade.Activate();
+        }
+
+        public static void MovePalisadeToDesktop(string identifier, string desktopId)
+        {
+            if (!Guid.TryParse(desktopId, out Guid targetDesktopId))
+            {
+                return;
+            }
+
+            palisades.TryGetValue(identifier, out Palisade? palisade);
+            if (palisade == null)
+            {
+                return;
+            }
+
+            IntPtr windowHandle = new WindowInteropHelper(palisade).Handle;
+            if (windowHandle == IntPtr.Zero)
+            {
+                return;
+            }
+
+            VirtualDesktopHelper.TryMoveWindowToDesktop(windowHandle, targetDesktopId);
+        }
+
+        public static void MovePalisadeToPreviousDesktop(string identifier)
+        {
+            MovePalisadeToAdjacentDesktop(identifier, moveToNextDesktop: false);
+        }
+
+        public static void MovePalisadeToNextDesktop(string identifier)
+        {
+            MovePalisadeToAdjacentDesktop(identifier, moveToNextDesktop: true);
+        }
+
+        private static void MovePalisadeToAdjacentDesktop(string identifier, bool moveToNextDesktop)
+        {
+            palisades.TryGetValue(identifier, out Palisade? palisade);
+            if (palisade == null)
+            {
+                return;
+            }
+
+            IntPtr windowHandle = new WindowInteropHelper(palisade).Handle;
+            if (windowHandle == IntPtr.Zero)
+            {
+                return;
+            }
+
+            if (moveToNextDesktop)
+            {
+                VirtualDesktopHelper.TryMoveWindowToNextDesktop(windowHandle);
+            }
+            else
+            {
+                VirtualDesktopHelper.TryMoveWindowToPreviousDesktop(windowHandle);
+            }
         }
 
         public static void DeletePalisade(string identifier)

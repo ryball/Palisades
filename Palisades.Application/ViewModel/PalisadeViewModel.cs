@@ -156,6 +156,16 @@ namespace Palisades.ViewModel
             get { return IsCollapsed ? "+" : "−"; }
         }
 
+        public bool SupportsMultipleDesktops
+        {
+            get { return VirtualDesktopHelper.HasMultipleDesktops(); }
+        }
+
+        public IEnumerable<VirtualDesktopInfo> AvailableDesktopTargets
+        {
+            get { return VirtualDesktopHelper.GetDesktops(); }
+        }
+
         public ResizeMode WindowResizeMode
         {
             get { return IsCollapsed ? ResizeMode.NoResize : ResizeMode.CanResize; }
@@ -659,6 +669,18 @@ namespace Palisades.ViewModel
         public ICommand DeletePalisadeCommand { get; private set; } = new RelayCommand<string>((identifier) => PalisadesManager.DeletePalisade(identifier));
 
         public ICommand HidePalisadeCommand { get; private set; } = new RelayCommand<string>((identifier) => PalisadesManager.HidePalisade(identifier));
+
+        public ICommand MovePalisadeToDesktopCommand
+        {
+            get
+            {
+                return new RelayCommand<string>((desktopId) => PalisadesManager.MovePalisadeToDesktop(Identifier, desktopId), () => VirtualDesktopHelper.HasMultipleDesktops());
+            }
+        }
+
+        public ICommand MovePalisadeToPreviousDesktopCommand { get; private set; } = new RelayCommand<string>((identifier) => PalisadesManager.MovePalisadeToPreviousDesktop(identifier), () => VirtualDesktopHelper.HasMultipleDesktops());
+
+        public ICommand MovePalisadeToNextDesktopCommand { get; private set; } = new RelayCommand<string>((identifier) => PalisadesManager.MovePalisadeToNextDesktop(identifier), () => VirtualDesktopHelper.HasMultipleDesktops());
 
         public ICommand ToggleCollapsedStateCommand
         {

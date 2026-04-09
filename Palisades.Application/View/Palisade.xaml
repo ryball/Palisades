@@ -44,6 +44,16 @@
                     <ContextMenu>
                         <MenuItem Header="Edit" Command="{Binding Path=Data.EditPalisadeCommand, Source={StaticResource proxy}}" CommandParameter="{Binding}" />
                         <MenuItem Header="Hide fence" Command="{Binding Path=Data.HidePalisadeCommand, Source={StaticResource proxy}}" CommandParameter="{Binding Identifier}" />
+                        <MenuItem Header="Move to desktop" ItemsSource="{Binding Path=Data.AvailableDesktopTargets, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.SupportsMultipleDesktops, Source={StaticResource proxy}}">
+                            <MenuItem.ItemContainerStyle>
+                                <Style TargetType="{x:Type MenuItem}">
+                                    <Setter Property="Header" Value="{Binding DisplayName}" />
+                                    <Setter Property="IsEnabled" Value="{Binding CanMoveTo}" />
+                                    <Setter Property="Command" Value="{Binding Path=Data.MovePalisadeToDesktopCommand, Source={StaticResource proxy}}" />
+                                    <Setter Property="CommandParameter" Value="{Binding DesktopId}" />
+                                </Style>
+                            </MenuItem.ItemContainerStyle>
+                        </MenuItem>
                         <MenuItem Header="{Binding Path=Data.CollapseMenuHeader, Source={StaticResource proxy}}" Command="{Binding Path=Data.ToggleCollapsedStateCommand, Source={StaticResource proxy}}" />
                         <MenuItem Header="Types">
                             <MenuItem Header="Add type..." Command="{Binding Path=Data.AddTypeCommand, Source={StaticResource proxy}}" />
