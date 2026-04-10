@@ -266,11 +266,19 @@
                         <SolidColorBrush Color="{Binding BodyColor}" />
                     </Rectangle.Fill>
                 </Rectangle>
-                <Image Source="{Binding BackgroundImagePath, Converter={StaticResource PathToImage}}"
-                       Visibility="{Binding BackgroundImageVisibility}"
-                       Opacity="{Binding BackgroundImageOpacity}"
-                       Stretch="UniformToFill"
-                       IsHitTestVisible="False" />
+                <Rectangle Visibility="{Binding BackgroundImageVisibility}"
+                           Opacity="{Binding BackgroundImageOpacity}"
+                           IsHitTestVisible="False">
+                    <Rectangle.Fill>
+                        <ImageBrush ImageSource="{Binding BackgroundImagePath, Converter={StaticResource PathToImage}}"
+                                    Stretch="{Binding BackgroundImageStretch}"
+                                    TileMode="{Binding BackgroundImageTileMode}"
+                                    Viewport="{Binding BackgroundImageViewport}"
+                                    ViewportUnits="{Binding BackgroundImageViewportUnits}"
+                                    AlignmentX="{Binding BackgroundImageAlignmentX}"
+                                    AlignmentY="{Binding BackgroundImageAlignmentY}" />
+                    </Rectangle.Fill>
+                </Rectangle>
                 <Grid Margin="14,12,14,12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />

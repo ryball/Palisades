@@ -1,4 +1,6 @@
-﻿using Palisades.Helpers;
+﻿using MaterialDesignThemes.Wpf;
+using Microsoft.Win32;
+using Palisades.Helpers;
 using Palisades.ViewModel;
 using Sentry;
 using System;
@@ -7,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Drawing = System.Drawing;
 using Forms = System.Windows.Forms;
@@ -35,6 +38,9 @@ namespace Palisades
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            ApplyWindowsAppTheme();
+            SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
 
             SetupTrayIcon();
 
@@ -281,6 +287,70 @@ namespace Palisades
             palisade.Top = Math.Min(Math.Max(palisade.Top, minTop), maxTop);
         }
 
+        private void SystemEvents_UserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
+        {
+            if (e.Category != UserPreferenceCategory.General &&
+                e.Category != UserPreferenceCategory.Color &&
+                e.Category != UserPreferenceCategory.VisualStyle)
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(new Action(ApplyWindowsAppTheme), DispatcherPriority.Background);
+        }
+
+        private void ApplyWindowsAppTheme()
+        {
+            bool useDarkMode = IsWindowsDarkModeEnabled();
+
+            try
+            {
+                PaletteHelper paletteHelper = new();
+                ITheme theme = paletteHelper.GetTheme();
+                theme.SetBaseTheme(useDarkMode ? Theme.Dark : Theme.Light);
+                theme.SetPrimaryColor(Colors.LightBlue);
+                theme.SetSecondaryColor(Colors.Lime);
+                paletteHelper.SetTheme(theme);
+            }
+            catch
+            {
+                // Keep the current app theme if the toolkit cannot be updated at runtime.
+            }
+
+            SetBrushResource("SettingsWindowForegroundBrush", useDarkMode ? Color.FromRgb(244, 246, 248) : Color.FromRgb(32, 38, 48));
+            SetBrushResource("SettingsWindowMutedTextBrush", useDarkMode ? Color.FromRgb(198, 208, 220) : Color.FromRgb(91, 103, 117));
+            SetBrushResource("SettingsWindowChromeBrush", useDarkMode ? Color.FromRgb(31, 36, 43) : Color.FromRgb(247, 248, 250));
+            SetBrushResource("SettingsWindowCardBrush", useDarkMode ? Color.FromRgb(41, 47, 56) : Color.FromRgb(255, 255, 255));
+            SetBrushResource("SettingsWindowSubtleBrush", useDarkMode ? Color.FromRgb(35, 40, 48) : Color.FromRgb(242, 245, 248));
+            SetBrushResource("SettingsWindowBorderBrush", useDarkMode ? Color.FromRgb(72, 82, 96) : Color.FromRgb(216, 224, 232));
+            SetBrushResource("SettingsWindowChipBrush", useDarkMode ? Color.FromRgb(47, 54, 64) : Color.FromRgb(240, 244, 248));
+            SetBrushResource("SettingsWindowTabHoverBrush", useDarkMode ? Color.FromRgb(48, 56, 67) : Color.FromRgb(236, 244, 251));
+            SetBrushResource("SettingsWindowTabSelectedBrush", useDarkMode ? Color.FromRgb(55, 72, 91) : Color.FromRgb(229, 241, 255));
+            SetBrushResource("SettingsWindowTabSelectedBorderBrush", useDarkMode ? Color.FromRgb(103, 185, 255) : Color.FromRgb(135, 185, 243));
+            SetBrushResource("SettingsWindowFooterBrush", useDarkMode ? Color.FromRgb(27, 31, 37) : Color.FromRgb(244, 246, 248));
+        }
+
+        private static bool IsWindowsDarkModeEnabled()
+        {
+            const string personalizeKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
+
+            try
+            {
+                using RegistryKey? personalizeKey = Registry.CurrentUser.OpenSubKey(personalizeKeyPath);
+                object? rawValue = personalizeKey?.GetValue("AppsUseLightTheme");
+                return rawValue is int lightThemeValue && lightThemeValue == 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void SetBrushResource(string resourceKey, Color color)
+        {
+            Current.Resources[resourceKey] = new SolidColorBrush(color);
+        }
+
         private void ShowStartupBalloonTip()
         {
             if (trayIcon == null)
@@ -302,6 +372,7 @@ namespace Palisades
 
         protected override void OnExit(ExitEventArgs e)
         {
+            SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
             desktopMonitorTimer.Stop();
             trayIcon?.Dispose();
             trayIcon = null;

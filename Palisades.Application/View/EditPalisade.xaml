@@ -14,11 +14,11 @@
         MinWidth="640"
         MinHeight="540"
         SizeToContent="Manual"
-        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        TextElement.Foreground="{DynamicResource SettingsWindowForegroundBrush}"
         TextElement.FontWeight="Regular"
         TextOptions.TextFormattingMode="Ideal"
         TextOptions.TextRenderingMode="Auto"
-        Background="{DynamicResource MaterialDesignPaper}"
+        Background="{DynamicResource SettingsWindowChromeBrush}"
         FontFamily="{DynamicResource MaterialDesignFont}"
         Style="{StaticResource MaterialDesignWindow}"
         ResizeMode="CanResizeWithGrip"
@@ -33,10 +33,12 @@
                         <Setter Property="VerticalAlignment" Value="Center" />
                         <Setter Property="HorizontalAlignment" Value="Stretch" />
                         <Setter Property="Margin" Value="0,5,0,5" />
+                        <Setter Property="Foreground" Value="{DynamicResource SettingsWindowForegroundBrush}" />
                     </Style>
 
                     <Style TargetType="Button">
                         <Setter Property="MinWidth" Value="96" />
+                        <Setter Property="Foreground" Value="{DynamicResource SettingsWindowForegroundBrush}" />
                     </Style>
 
                     <Style TargetType="colorpicker:PortableColorPicker">
@@ -47,8 +49,8 @@
                         <Setter Property="Margin" Value="0,0,14,14" />
                         <Setter Property="Padding" Value="16" />
                         <Setter Property="CornerRadius" Value="10" />
-                        <Setter Property="Background" Value="#14000000" />
-                        <Setter Property="BorderBrush" Value="#26000000" />
+                        <Setter Property="Background" Value="{DynamicResource SettingsWindowCardBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource SettingsWindowBorderBrush}" />
                         <Setter Property="BorderThickness" Value="1" />
                     </Style>
 
@@ -56,26 +58,28 @@
                         <Setter Property="FontSize" Value="20" />
                         <Setter Property="FontWeight" Value="SemiBold" />
                         <Setter Property="Margin" Value="0,0,0,12" />
+                        <Setter Property="Foreground" Value="{DynamicResource SettingsWindowForegroundBrush}" />
                     </Style>
 
                     <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
                         <Setter Property="FontSize" Value="14" />
                         <Setter Property="FontWeight" Value="SemiBold" />
                         <Setter Property="Margin" Value="0,10,0,0" />
+                        <Setter Property="Foreground" Value="{DynamicResource SettingsWindowForegroundBrush}" />
                     </Style>
 
                     <Style x:Key="HintTextStyle" TargetType="TextBlock">
                         <Setter Property="Margin" Value="0,6,0,0" />
                         <Setter Property="TextWrapping" Value="Wrap" />
-                        <Setter Property="Opacity" Value="0.78" />
+                        <Setter Property="Foreground" Value="{DynamicResource SettingsWindowMutedTextBrush}" />
                     </Style>
 
                     <Style x:Key="ValueChipStyle" TargetType="Border">
                         <Setter Property="Margin" Value="10,0,0,0" />
                         <Setter Property="Padding" Value="10,4" />
                         <Setter Property="CornerRadius" Value="999" />
-                        <Setter Property="Background" Value="#16000000" />
-                        <Setter Property="BorderBrush" Value="#28000000" />
+                        <Setter Property="Background" Value="{DynamicResource SettingsWindowChipBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource SettingsWindowBorderBrush}" />
                         <Setter Property="BorderThickness" Value="1" />
                         <Setter Property="VerticalAlignment" Value="Center" />
                     </Style>
@@ -90,8 +94,8 @@
                         <Setter Property="Margin" Value="0,0,8,8" />
                         <Setter Property="Padding" Value="10,4" />
                         <Setter Property="CornerRadius" Value="999" />
-                        <Setter Property="Background" Value="#16000000" />
-                        <Setter Property="BorderBrush" Value="#28000000" />
+                        <Setter Property="Background" Value="{DynamicResource SettingsWindowChipBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource SettingsWindowBorderBrush}" />
                         <Setter Property="BorderThickness" Value="1" />
                     </Style>
 
@@ -99,8 +103,8 @@
                         <Setter Property="Margin" Value="0,8,0,0" />
                         <Setter Property="Padding" Value="12" />
                         <Setter Property="CornerRadius" Value="10" />
-                        <Setter Property="Background" Value="#12000000" />
-                        <Setter Property="BorderBrush" Value="#22000000" />
+                        <Setter Property="Background" Value="{DynamicResource SettingsWindowSubtleBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource SettingsWindowBorderBrush}" />
                         <Setter Property="BorderThickness" Value="1" />
                     </Style>
 
@@ -108,13 +112,14 @@
                         <Setter Property="Margin" Value="0,0,8,0" />
                         <Setter Property="Padding" Value="14,8" />
                         <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Foreground" Value="{DynamicResource SettingsWindowForegroundBrush}" />
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="TabItem">
                                     <Border x:Name="TabBorder"
                                             Padding="{TemplateBinding Padding}"
-                                            Background="#14000000"
-                                            BorderBrush="#22000000"
+                                            Background="{DynamicResource SettingsWindowSubtleBrush}"
+                                            BorderBrush="{DynamicResource SettingsWindowBorderBrush}"
                                             BorderThickness="1"
                                             CornerRadius="10,10,0,0">
                                         <ContentPresenter HorizontalAlignment="Center"
@@ -123,11 +128,11 @@
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="TabBorder" Property="Background" Value="#1C000000" />
+                                            <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource SettingsWindowTabHoverBrush}" />
                                         </Trigger>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="TabBorder" Property="Background" Value="#22FFFFFF" />
-                                            <Setter TargetName="TabBorder" Property="BorderBrush" Value="#36FFFFFF" />
+                                            <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource SettingsWindowTabSelectedBrush}" />
+                                            <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource SettingsWindowTabSelectedBorderBrush}" />
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
@@ -151,8 +156,8 @@
 
         <Border Grid.Row="0"
                 Padding="18,16"
-                Background="#12000000"
-                BorderBrush="#1FFFFFFF"
+                Background="{DynamicResource SettingsWindowChromeBrush}"
+                BorderBrush="{DynamicResource SettingsWindowBorderBrush}"
                 BorderThickness="0,0,0,1">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -285,26 +290,44 @@
                         <TextBlock Text="Theme" />
                     </StackPanel>
                 </TabItem.Header>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="10">
-                    <WrapPanel Orientation="Horizontal" ItemWidth="360">
-                        <Border Style="{StaticResource SettingsCardStyle}">
+                <Grid Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.45*" MinWidth="380" />
+                        <ColumnDefinition Width="14" />
+                        <ColumnDefinition Width="0.95*" MinWidth="280" />
+                    </Grid.ColumnDefinitions>
+
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <Border Style="{StaticResource SettingsCardStyle}" Margin="0,0,0,14">
                             <StackPanel>
                                 <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Theme Builder" />
 
-                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Theme preset" />
-                                <ComboBox Margin="0,6,0,0"
-                                          ItemsSource="{Binding AvailableThemePresets}"
-                                          SelectedItem="{Binding SelectedThemePreset, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock Margin="0,6,0,0"
-                                           Style="{StaticResource HintTextStyle}"
-                                           Text="Pick `Galactic` for a sci-fi look close to your example, then tweak colors and overlays to make it your own." />
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
 
-                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Title font" />
-                                <ComboBox Margin="0,6,0,0"
-                                          ItemsSource="{Binding AvailableTitleFonts}"
-                                          SelectedItem="{Binding SelectedTitleFontName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          MaxDropDownHeight="260"
-                                          IsTextSearchEnabled="True" />
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Theme preset" />
+                                        <ComboBox Margin="0,6,0,0"
+                                                  ItemsSource="{Binding AvailableThemePresets}"
+                                                  SelectedItem="{Binding SelectedThemePreset, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Margin="0,6,0,0"
+                                                   Style="{StaticResource HintTextStyle}"
+                                                   Text="Pick `Galactic` for a sci-fi look close to your example, then tweak colors and overlays to make it your own." />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Title font" />
+                                        <ComboBox Margin="0,6,0,0"
+                                                  ItemsSource="{Binding AvailableTitleFonts}"
+                                                  SelectedItem="{Binding SelectedTitleFontName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  MaxDropDownHeight="260"
+                                                  IsTextSearchEnabled="True" />
+                                    </StackPanel>
+                                </Grid>
 
                                 <WrapPanel Margin="0,12,0,2">
                                     <Border Style="{StaticResource InfoPillStyle}">
@@ -321,105 +344,126 @@
                                     </Border>
                                 </WrapPanel>
 
-                                <Border Style="{StaticResource OptionCardStyle}" Margin="0,12,0,0">
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource FieldLabelStyle}" Margin="0" Text="Colors" />
-                                        <TextBlock Style="{StaticResource HintTextStyle}" Text="Adjust the main fence palette here, then use the live preview to fine-tune the feel." />
-                                        <Grid Margin="0,8,0,0">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="170" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1.15*" MinWidth="290" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="0.95*" MinWidth="250" />
+                                    </Grid.ColumnDefinitions>
 
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Title bar background" VerticalAlignment="Center" />
-                                            <colorpicker:PortableColorPicker Grid.Row="0" Grid.Column="1" SelectedColor="{Binding HeaderColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" Margin="0,0,0,8" />
+                                    <Border Grid.Column="0" Style="{StaticResource OptionCardStyle}" Margin="0">
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource FieldLabelStyle}" Margin="0" Text="Colors" />
+                                            <TextBlock Style="{StaticResource HintTextStyle}" Text="Adjust the main fence palette here, then use the live preview to fine-tune the feel." />
+                                            <Grid Margin="0,8,0,0">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
 
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Fence background" VerticalAlignment="Center" />
-                                            <colorpicker:PortableColorPicker Grid.Row="1" Grid.Column="1" SelectedColor="{Binding BodyColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" Margin="0,0,0,8" />
+                                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Title bar background" VerticalAlignment="Center" />
+                                                <colorpicker:PortableColorPicker Grid.Row="0" Grid.Column="1" SelectedColor="{Binding HeaderColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" Margin="0,0,0,8" />
 
-                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Title text" VerticalAlignment="Center" />
-                                            <colorpicker:PortableColorPicker Grid.Row="2" Grid.Column="1" SelectedColor="{Binding TitleColor, Converter={StaticResource brushConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" Margin="0,0,0,8" />
+                                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Fence background" VerticalAlignment="Center" />
+                                                <colorpicker:PortableColorPicker Grid.Row="1" Grid.Column="1" SelectedColor="{Binding BodyColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" Margin="0,0,0,8" />
 
-                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Shortcut text" VerticalAlignment="Center" />
-                                            <colorpicker:PortableColorPicker Grid.Row="3" Grid.Column="1" SelectedColor="{Binding LabelsColor, Converter={StaticResource brushConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" Margin="0,0,0,8" />
+                                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Title text" VerticalAlignment="Center" />
+                                                <colorpicker:PortableColorPicker Grid.Row="2" Grid.Column="1" SelectedColor="{Binding TitleColor, Converter={StaticResource brushConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" Margin="0,0,0,8" />
 
-                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Theme accent / glow" VerticalAlignment="Center" />
-                                            <colorpicker:PortableColorPicker Grid.Row="4" Grid.Column="1" SelectedColor="{Binding AccentColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" />
-                                        </Grid>
+                                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Shortcut text" VerticalAlignment="Center" />
+                                                <colorpicker:PortableColorPicker Grid.Row="3" Grid.Column="1" SelectedColor="{Binding LabelsColor, Converter={StaticResource brushConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" Margin="0,0,0,8" />
+
+                                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Theme accent / glow" VerticalAlignment="Center" />
+                                                <colorpicker:PortableColorPicker Grid.Row="4" Grid.Column="1" SelectedColor="{Binding AccentColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" />
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="2">
+                                        <Border Style="{StaticResource OptionCardStyle}" Margin="0,0,0,8" VerticalAlignment="Top">
+                                            <StackPanel>
+                                                <TextBlock Style="{StaticResource FieldLabelStyle}" Margin="0" Text="Background art" />
+                                                <WrapPanel Margin="0,6,0,0">
+                                                    <Button Style="{StaticResource ActionButtonStyle}" Content="Choose image..." Command="{Binding SelectBackgroundImageCommand}" />
+                                                    <Button Style="{StaticResource ActionButtonStyle}" Content="Clear" Command="{Binding ClearBackgroundImageCommand}" MinWidth="84" />
+                                                </WrapPanel>
+                                                <TextBlock Style="{StaticResource HintTextStyle}" Text="{Binding BackgroundImageLabel}" />
+
+                                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Background layout" />
+                                                <ComboBox Margin="0,6,0,0"
+                                                          ItemsSource="{Binding AvailableBackgroundImageLayouts}"
+                                                          SelectedItem="{Binding SelectedBackgroundImageLayout, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                <TextBlock Style="{StaticResource HintTextStyle}" Text="{Binding BackgroundImageLayoutDescription}" />
+
+                                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Fence background opacity" />
+                                                <DockPanel Margin="0,6,0,0" LastChildFill="False">
+                                                    <Slider Width="170"
+                                                            Minimum="0.05"
+                                                            Maximum="1"
+                                                            TickFrequency="0.05"
+                                                            Value="{Binding BackgroundImageOpacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            VerticalAlignment="Center" />
+                                                    <Border Style="{StaticResource ValueChipStyle}">
+                                                        <TextBlock Text="{Binding BackgroundImageOpacity, StringFormat={}{0:P0}}" FontWeight="SemiBold" />
+                                                    </Border>
+                                                </DockPanel>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Style="{StaticResource OptionCardStyle}" Margin="0" VerticalAlignment="Top">
+                                            <StackPanel>
+                                                <TextBlock Style="{StaticResource FieldLabelStyle}" Margin="0" Text="Frame art" />
+                                                <WrapPanel Margin="0,6,0,0">
+                                                    <Button Style="{StaticResource ActionButtonStyle}" Content="Choose frame..." Command="{Binding SelectFrameOverlayCommand}" />
+                                                    <Button Style="{StaticResource ActionButtonStyle}" Content="Clear" Command="{Binding ClearFrameOverlayCommand}" MinWidth="84" />
+                                                </WrapPanel>
+                                                <TextBlock Style="{StaticResource HintTextStyle}" Text="{Binding FrameOverlayLabel}" />
+                                                <TextBlock Margin="0,6,0,0" Style="{StaticResource HintTextStyle}" Text="PNG overlays with a transparent center work best for frame art like the example image." />
+
+                                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Theme frame opacity" />
+                                                <DockPanel Margin="0,6,0,0" LastChildFill="False">
+                                                    <Slider Width="170"
+                                                            Minimum="0.05"
+                                                            Maximum="1"
+                                                            TickFrequency="0.05"
+                                                            Value="{Binding FrameOverlayOpacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            VerticalAlignment="Center" />
+                                                    <Border Style="{StaticResource ValueChipStyle}">
+                                                        <TextBlock Text="{Binding FrameOverlayOpacity, StringFormat={}{0:P0}}" FontWeight="SemiBold" />
+                                                    </Border>
+                                                </DockPanel>
+                                            </StackPanel>
+                                        </Border>
                                     </StackPanel>
-                                </Border>
-
-                                <Border Style="{StaticResource OptionCardStyle}">
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource FieldLabelStyle}" Margin="0" Text="Background art" />
-                                        <WrapPanel Margin="0,6,0,0">
-                                            <Button Style="{StaticResource ActionButtonStyle}" Content="Choose image..." Command="{Binding SelectBackgroundImageCommand}" />
-                                            <Button Style="{StaticResource ActionButtonStyle}" Content="Clear" Command="{Binding ClearBackgroundImageCommand}" MinWidth="84" />
-                                        </WrapPanel>
-                                        <TextBlock Style="{StaticResource HintTextStyle}" Text="{Binding BackgroundImageLabel}" />
-
-                                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Fence background opacity" />
-                                        <DockPanel Margin="0,6,0,0" LastChildFill="False">
-                                            <Slider Width="220"
-                                                    Minimum="0.05"
-                                                    Maximum="1"
-                                                    TickFrequency="0.05"
-                                                    Value="{Binding BackgroundImageOpacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                    VerticalAlignment="Center" />
-                                            <Border Style="{StaticResource ValueChipStyle}">
-                                                <TextBlock Text="{Binding BackgroundImageOpacity, StringFormat={}{0:P0}}" FontWeight="SemiBold" />
-                                            </Border>
-                                        </DockPanel>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Style="{StaticResource OptionCardStyle}">
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource FieldLabelStyle}" Margin="0" Text="Frame art" />
-                                        <WrapPanel Margin="0,6,0,0">
-                                            <Button Style="{StaticResource ActionButtonStyle}" Content="Choose frame..." Command="{Binding SelectFrameOverlayCommand}" />
-                                            <Button Style="{StaticResource ActionButtonStyle}" Content="Clear" Command="{Binding ClearFrameOverlayCommand}" MinWidth="84" />
-                                        </WrapPanel>
-                                        <TextBlock Style="{StaticResource HintTextStyle}" Text="{Binding FrameOverlayLabel}" />
-                                        <TextBlock Margin="0,6,0,0" Style="{StaticResource HintTextStyle}" Text="PNG overlays with a transparent center work best for frame art like the example image." />
-
-                                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Theme frame opacity" />
-                                        <DockPanel Margin="0,6,0,0" LastChildFill="False">
-                                            <Slider Width="220"
-                                                    Minimum="0.05"
-                                                    Maximum="1"
-                                                    TickFrequency="0.05"
-                                                    Value="{Binding FrameOverlayOpacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                    VerticalAlignment="Center" />
-                                            <Border Style="{StaticResource ValueChipStyle}">
-                                                <TextBlock Text="{Binding FrameOverlayOpacity, StringFormat={}{0:P0}}" FontWeight="SemiBold" />
-                                            </Border>
-                                        </DockPanel>
-                                    </StackPanel>
-                                </Border>
+                                </Grid>
                             </StackPanel>
                         </Border>
+                    </ScrollViewer>
 
-                        <Border Style="{StaticResource SettingsCardStyle}">
+                    <Border Grid.Column="2" Style="{StaticResource SettingsCardStyle}" Margin="0,0,0,14">
                             <StackPanel>
                                 <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Live Preview" />
                                 <TextBlock Text="This preview updates as you change colors, fonts, fence backgrounds, and frame overlays." Opacity="0.8" TextWrapping="Wrap" />
 
-                                <Border Margin="0,12,0,0"
-                                        Padding="0"
-                                        CornerRadius="16"
-                                        BorderBrush="{Binding AccentBrush}"
-                                        BorderThickness="2"
-                                        Background="#06000000">
-                                    <Grid ClipToBounds="True">
-                                        <StackPanel Margin="10">
+                                <Viewbox Margin="0,12,0,0"
+                                         Stretch="Uniform"
+                                         StretchDirection="DownOnly"
+                                         HorizontalAlignment="Left">
+                                    <Border Width="320"
+                                            Padding="0"
+                                            CornerRadius="16"
+                                            BorderBrush="{Binding AccentBrush}"
+                                            BorderThickness="2"
+                                            Background="#06000000">
+                                        <Grid ClipToBounds="True">
+                                            <StackPanel Margin="10">
                                             <Border Height="{Binding HeaderHeight}"
                                                     MinHeight="36"
                                                     Padding="14,0"
@@ -463,11 +507,19 @@
                                                     CornerRadius="12"
                                                     Background="{Binding BodyBrush}">
                                                 <Grid ClipToBounds="True">
-                                                    <Image Source="{Binding BackgroundImagePath, Converter={StaticResource PathToImage}}"
-                                                           Visibility="{Binding BackgroundImageVisibility}"
-                                                           Opacity="{Binding BackgroundImageOpacity}"
-                                                           Stretch="UniformToFill"
-                                                           IsHitTestVisible="False" />
+                                                    <Rectangle Visibility="{Binding BackgroundImageVisibility}"
+                                                               Opacity="{Binding BackgroundImageOpacity}"
+                                                               IsHitTestVisible="False">
+                                                        <Rectangle.Fill>
+                                                            <ImageBrush ImageSource="{Binding BackgroundImagePath, Converter={StaticResource PathToImage}}"
+                                                                        Stretch="{Binding BackgroundImageStretch}"
+                                                                        TileMode="{Binding BackgroundImageTileMode}"
+                                                                        Viewport="{Binding BackgroundImageViewport}"
+                                                                        ViewportUnits="{Binding BackgroundImageViewportUnits}"
+                                                                        AlignmentX="{Binding BackgroundImageAlignmentX}"
+                                                                        AlignmentY="{Binding BackgroundImageAlignmentY}" />
+                                                        </Rectangle.Fill>
+                                                    </Rectangle>
                                                     <StackPanel Margin="10">
                                                         <Border Visibility="{Binding SearchVisibility}"
                                                                 Padding="8,4"
@@ -512,6 +564,10 @@
                                                                        TextWrapping="Wrap"
                                                                        Foreground="{Binding LabelsColor}" />
                                                             <TextBlock Margin="12,0,0,0"
+                                                                       Text="{Binding SelectedBackgroundImageLayout, StringFormat=Layout: {0}}"
+                                                                       TextWrapping="Wrap"
+                                                                       Foreground="{Binding LabelsColor}" />
+                                                            <TextBlock Margin="12,0,0,0"
                                                                        Text="{Binding FrameOverlayLabel, StringFormat=Overlay: {0}}"
                                                                        TextWrapping="Wrap"
                                                                        Foreground="{Binding LabelsColor}" />
@@ -526,12 +582,12 @@
                                                Opacity="{Binding FrameOverlayOpacity}"
                                                Stretch="Fill"
                                                IsHitTestVisible="False" />
-                                    </Grid>
-                                </Border>
+                                        </Grid>
+                                    </Border>
+                                </Viewbox>
                             </StackPanel>
                         </Border>
-                    </WrapPanel>
-                </ScrollViewer>
+                </Grid>
             </TabItem>
 
             <TabItem>
@@ -603,20 +659,29 @@
         </TabControl>
         <Border Grid.Row="2"
                 Padding="14,10"
-                Background="#12000000"
-                BorderBrush="#1FFFFFFF"
+                Background="{DynamicResource SettingsWindowFooterBrush}"
+                BorderBrush="{DynamicResource SettingsWindowBorderBrush}"
                 BorderThickness="0,1,0,0">
             <DockPanel LastChildFill="False">
                 <TextBlock Style="{StaticResource HintTextStyle}"
                            VerticalAlignment="Center"
-                           Text="Changes save instantly while you edit this fence. Press Esc or use Done when you're finished." />
-                <Button DockPanel.Dock="Right"
-                        Style="{StaticResource ActionButtonStyle}"
-                        Content="Done"
-                        ToolTip="Close settings"
-                        IsCancel="True"
-                        Padding="18,6"
-                        Margin="12,0,0,0" />
+                           Text="Changes preview live while this window is open. Choose Save changes to keep them or Cancel to revert them." />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Style="{StaticResource ActionButtonStyle}"
+                            Content="Cancel"
+                            IsCancel="True"
+                            Click="CancelButton_Click"
+                            ToolTip="Close without keeping these changes"
+                            MinWidth="96"
+                            Margin="0,0,8,0" />
+                    <Button Style="{StaticResource ActionButtonStyle}"
+                            Content="Save changes"
+                            IsDefault="True"
+                            Click="SaveButton_Click"
+                            ToolTip="Apply and keep these changes"
+                            MinWidth="128"
+                            Margin="0" />
+                </StackPanel>
             </DockPanel>
         </Border>
     </Grid>

@@ -32,7 +32,9 @@ namespace Palisades.ViewModel
         private const string CustomThemePresetName = "Custom";
         private const string DefaultThemePresetName = "Midnight";
         private const string DefaultTitleFontFamilyName = "Segoe UI";
+        private const string DefaultBackgroundImageLayoutName = "Fill";
         private static readonly string[] ThemePresetOrder = new[] { "Galactic", DefaultThemePresetName, "Aurora", "Forest", "Sunset", "Paper" };
+        private static readonly string[] BackgroundImageLayoutOptions = new[] { DefaultBackgroundImageLayoutName, "Fit", "Stretch", "Center", "Tile" };
         private static readonly IReadOnlyDictionary<string, (Color Header, Color Body, Color Title, Color Labels, Color Accent)> ThemePresets = new Dictionary<string, (Color Header, Color Body, Color Title, Color Labels, Color Accent)>(StringComparer.OrdinalIgnoreCase)
         {
             ["Galactic"] = (Color.FromArgb(220, 7, 31, 58), Color.FromArgb(150, 3, 11, 28), Color.FromArgb(255, 226, 249, 255), Color.FromArgb(255, 214, 236, 255), Color.FromArgb(255, 96, 229, 255)),
@@ -57,6 +59,8 @@ namespace Palisades.ViewModel
         private Shortcut? selectedShortcut;
         private bool isHiddenByUser;
         private bool isApplyingThemePreset;
+        private EditableSettingsSnapshot? activeSettingsSnapshot;
+        private bool hasPendingSettingsChanges;
 
         private sealed class ShortcutHistorySnapshot
         {
@@ -70,6 +74,52 @@ namespace Palisades.ViewModel
             public string SerializedModel { get; }
             public List<int> SelectedIndices { get; }
             public int PrimaryIndex { get; }
+        }
+
+        private sealed class EditableSettingsSnapshot
+        {
+            public EditableSettingsSnapshot(PalisadeViewModel viewModel)
+            {
+                Name = viewModel.model.Name;
+                HeaderHeight = viewModel.model.HeaderHeight;
+                IconSize = viewModel.model.IconSize;
+                IsLayoutLocked = viewModel.model.IsLayoutLocked;
+                IsSearchEnabled = viewModel.model.IsSearchEnabled;
+                ShowInAltTab = viewModel.model.ShowInAltTab;
+                ThemePreset = viewModel.model.ThemePreset;
+                TitleFontFamilyName = viewModel.model.TitleFontFamilyName;
+                BackgroundImagePath = viewModel.model.BackgroundImagePath;
+                BackgroundImageLayout = viewModel.model.BackgroundImageLayout;
+                BackgroundImageOpacity = viewModel.model.BackgroundImageOpacity;
+                FrameOverlayPath = viewModel.model.FrameOverlayPath;
+                FrameOverlayOpacity = viewModel.model.FrameOverlayOpacity;
+                HeaderColor = viewModel.model.HeaderColor;
+                BodyColor = viewModel.model.BodyColor;
+                TitleColor = viewModel.model.TitleColor;
+                LabelsColor = viewModel.model.LabelsColor;
+                AccentColor = viewModel.model.AccentColor;
+                StartWithWindows = viewModel.StartWithWindows;
+            }
+
+            public string Name { get; }
+            public int HeaderHeight { get; }
+            public int IconSize { get; }
+            public bool IsLayoutLocked { get; }
+            public bool IsSearchEnabled { get; }
+            public bool ShowInAltTab { get; }
+            public string ThemePreset { get; }
+            public string TitleFontFamilyName { get; }
+            public string BackgroundImagePath { get; }
+            public string BackgroundImageLayout { get; }
+            public double BackgroundImageOpacity { get; }
+            public string FrameOverlayPath { get; }
+            public double FrameOverlayOpacity { get; }
+            public Color HeaderColor { get; }
+            public Color BodyColor { get; }
+            public Color TitleColor { get; }
+            public Color LabelsColor { get; }
+            public Color AccentColor { get; }
+            public bool StartWithWindows { get; }
         }
         #endregion
 
@@ -338,6 +388,11 @@ namespace Palisades.ViewModel
             get { return Fonts.SystemFontFamilies.Select(font => font.Source).OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase).ToList(); }
         }
 
+        public IEnumerable<string> AvailableBackgroundImageLayouts
+        {
+            get { return BackgroundImageLayoutOptions; }
+        }
+
         public string SelectedThemePreset
         {
             get { return NormalizeThemePreset(model.ThemePreset); }
@@ -418,6 +473,91 @@ namespace Palisades.ViewModel
         public string BackgroundImageLabel
         {
             get { return HasBackgroundImage ? Path.GetFileName(model.BackgroundImagePath) : "No fence background image selected."; }
+        }
+
+        public string SelectedBackgroundImageLayout
+        {
+            get { return NormalizeBackgroundImageLayout(model.BackgroundImageLayout); }
+            set
+            {
+                string normalized = NormalizeBackgroundImageLayout(value);
+                if (string.Equals(model.BackgroundImageLayout, normalized, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                model.BackgroundImageLayout = normalized;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(BackgroundImageLayoutDescription));
+                OnPropertyChanged(nameof(BackgroundImageStretch));
+                OnPropertyChanged(nameof(BackgroundImageTileMode));
+                OnPropertyChanged(nameof(BackgroundImageViewport));
+                OnPropertyChanged(nameof(BackgroundImageViewportUnits));
+                OnPropertyChanged(nameof(BackgroundImageAlignmentX));
+                OnPropertyChanged(nameof(BackgroundImageAlignmentY));
+                MarkThemePresetAsCustom();
+                Save();
+            }
+        }
+
+        public string BackgroundImageLayoutDescription
+        {
+            get
+            {
+                return SelectedBackgroundImageLayout switch
+                {
+                    "Fit" => "Fit shows the whole image inside the fence without cropping.",
+                    "Stretch" => "Stretch fills the fence by stretching the image to both dimensions.",
+                    "Center" => "Center keeps the image at its original size and centers it in the fence.",
+                    "Tile" => "Tile repeats the image across the entire fence background.",
+                    _ => "Fill covers the fence fully and may crop the edges slightly."
+                };
+            }
+        }
+
+        public Stretch BackgroundImageStretch
+        {
+            get
+            {
+                return SelectedBackgroundImageLayout switch
+                {
+                    "Fit" => Stretch.Uniform,
+                    "Stretch" => Stretch.Fill,
+                    "Center" => Stretch.None,
+                    "Tile" => Stretch.UniformToFill,
+                    _ => Stretch.UniformToFill
+                };
+            }
+        }
+
+        public TileMode BackgroundImageTileMode
+        {
+            get { return string.Equals(SelectedBackgroundImageLayout, "Tile", StringComparison.OrdinalIgnoreCase) ? TileMode.Tile : TileMode.None; }
+        }
+
+        public Rect BackgroundImageViewport
+        {
+            get
+            {
+                return string.Equals(SelectedBackgroundImageLayout, "Tile", StringComparison.OrdinalIgnoreCase)
+                    ? new Rect(0d, 0d, 0.35d, 0.35d)
+                    : new Rect(0d, 0d, 1d, 1d);
+            }
+        }
+
+        public BrushMappingMode BackgroundImageViewportUnits
+        {
+            get { return BrushMappingMode.RelativeToBoundingBox; }
+        }
+
+        public AlignmentX BackgroundImageAlignmentX
+        {
+            get { return AlignmentX.Center; }
+        }
+
+        public AlignmentY BackgroundImageAlignmentY
+        {
+            get { return AlignmentY.Center; }
         }
 
         public string FrameOverlayPath
@@ -922,7 +1062,135 @@ namespace Palisades.ViewModel
         #region Methods
         public void Save()
         {
+            if (activeSettingsSnapshot != null)
+            {
+                hasPendingSettingsChanges = true;
+                return;
+            }
+
             shouldSave = true;
+        }
+
+        public void BeginSettingsEditSession()
+        {
+            if (activeSettingsSnapshot != null)
+            {
+                return;
+            }
+
+            activeSettingsSnapshot = new EditableSettingsSnapshot(this);
+            hasPendingSettingsChanges = false;
+        }
+
+        public void CommitSettingsEditSession()
+        {
+            if (activeSettingsSnapshot == null)
+            {
+                return;
+            }
+
+            activeSettingsSnapshot = null;
+            bool shouldPersistChanges = hasPendingSettingsChanges;
+            hasPendingSettingsChanges = false;
+
+            if (shouldPersistChanges)
+            {
+                Save();
+            }
+        }
+
+        public void CancelSettingsEditSession()
+        {
+            if (activeSettingsSnapshot == null)
+            {
+                return;
+            }
+
+            EditableSettingsSnapshot snapshot = activeSettingsSnapshot;
+            activeSettingsSnapshot = null;
+            hasPendingSettingsChanges = false;
+
+            model.Name = snapshot.Name;
+            model.HeaderHeight = snapshot.HeaderHeight;
+            model.IconSize = snapshot.IconSize;
+            model.IsLayoutLocked = snapshot.IsLayoutLocked;
+            model.IsSearchEnabled = snapshot.IsSearchEnabled;
+            model.ShowInAltTab = snapshot.ShowInAltTab;
+            model.ThemePreset = snapshot.ThemePreset;
+            model.TitleFontFamilyName = snapshot.TitleFontFamilyName;
+            model.BackgroundImagePath = snapshot.BackgroundImagePath;
+            model.BackgroundImageLayout = snapshot.BackgroundImageLayout;
+            model.BackgroundImageOpacity = snapshot.BackgroundImageOpacity;
+            model.FrameOverlayPath = snapshot.FrameOverlayPath;
+            model.FrameOverlayOpacity = snapshot.FrameOverlayOpacity;
+            model.HeaderColor = snapshot.HeaderColor;
+            model.BodyColor = snapshot.BodyColor;
+            model.TitleColor = snapshot.TitleColor;
+            model.LabelsColor = snapshot.LabelsColor;
+            model.AccentColor = snapshot.AccentColor;
+
+            if (StartupLaunchHelper.IsEnabled() != snapshot.StartWithWindows)
+            {
+                StartupLaunchHelper.SetEnabled(snapshot.StartWithWindows);
+            }
+
+            RefreshTabbedState();
+            CommandManager.InvalidateRequerySuggested();
+
+            string[] changedProperties = new[]
+            {
+                nameof(Name),
+                nameof(HeaderHeight),
+                nameof(Height),
+                nameof(TitleFontSize),
+                nameof(IconSize),
+                nameof(ShortcutTileWidth),
+                nameof(ShortcutTextMaxWidth),
+                nameof(IsLayoutLocked),
+                nameof(CanEditShortcuts),
+                nameof(LayoutLockDescription),
+                nameof(WindowResizeMode),
+                nameof(IsSearchEnabled),
+                nameof(SearchVisibility),
+                nameof(HasActiveSearch),
+                nameof(ShowInAltTab),
+                nameof(AltTabVisibilityDescription),
+                nameof(SelectedThemePreset),
+                nameof(SelectedTitleFontName),
+                nameof(TitleFontFamily),
+                nameof(BackgroundImagePath),
+                nameof(BackgroundImageLabel),
+                nameof(HasBackgroundImage),
+                nameof(BackgroundImageVisibility),
+                nameof(SelectedBackgroundImageLayout),
+                nameof(BackgroundImageLayoutDescription),
+                nameof(BackgroundImageStretch),
+                nameof(BackgroundImageTileMode),
+                nameof(BackgroundImageViewport),
+                nameof(BackgroundImageViewportUnits),
+                nameof(BackgroundImageAlignmentX),
+                nameof(BackgroundImageAlignmentY),
+                nameof(BackgroundImageOpacity),
+                nameof(FrameOverlayPath),
+                nameof(FrameOverlayLabel),
+                nameof(HasFrameOverlay),
+                nameof(FrameOverlayVisibility),
+                nameof(FrameOverlayOpacity),
+                nameof(HeaderColor),
+                nameof(HeaderBrush),
+                nameof(BodyColor),
+                nameof(BodyBrush),
+                nameof(TitleColor),
+                nameof(LabelsColor),
+                nameof(AccentColor),
+                nameof(AccentBrush),
+                nameof(StartWithWindows)
+            };
+
+            foreach (string propertyName in changedProperties)
+            {
+                OnPropertyChanged(propertyName);
+            }
         }
 
         public void RefreshTabbedState()
@@ -1196,6 +1464,19 @@ namespace Palisades.ViewModel
         {
             return !string.IsNullOrWhiteSpace(value)
                 && value.IndexOf(search, StringComparison.CurrentCultureIgnoreCase) >= 0;
+        }
+
+        private static string NormalizeBackgroundImageLayout(string? layout)
+        {
+            if (string.IsNullOrWhiteSpace(layout))
+            {
+                return DefaultBackgroundImageLayoutName;
+            }
+
+            string normalized = layout.Trim();
+            return BackgroundImageLayoutOptions.Contains(normalized, StringComparer.OrdinalIgnoreCase)
+                ? BackgroundImageLayoutOptions.First(option => string.Equals(option, normalized, StringComparison.OrdinalIgnoreCase))
+                : DefaultBackgroundImageLayoutName;
         }
 
         private static string NormalizeThemePreset(string? themePreset)
@@ -2347,8 +2628,7 @@ namespace Palisades.ViewModel
                 ShowInTaskbar = false,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
-            edit.Show();
-            edit.Activate();
+            edit.ShowDialog();
         });
 
         public ICommand OpenAboutCommand { get; private set; } = new RelayCommand<PalisadeViewModel>((viewModel) =>

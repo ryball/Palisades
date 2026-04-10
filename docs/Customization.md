@@ -4,12 +4,15 @@
 
 1. Right-click a palisade header and choose **Edit**.
 2. The settings window is now **resizable, responsive, and tabbed**, so you can make it wider or taller when working on theme-heavy fences.
-3. The sliders now show cleaner inline value chips, the tabs use clearer visual labels, and the footer reminds you that changes save instantly while you edit.
+3. The sliders now show cleaner inline value chips, the tabs use clearer visual labels, and the footer now gives you **Save changes** and **Cancel** so the edit window no longer commits everything instantly.
 4. The **Theme** tab also shows quick summary pills for the active preset, font, background, and overlay while you customize.
 5. The **Startup** and **Behavior** sections now use clearer card-style option blocks with short descriptions, making them easier to scan quickly.
 6. The **Theme** tab is also split into clearer **Colors**, **Background art**, and **Frame art** sections so large theme setups are easier to work through.
-7. The settings header now shows quick summary pills for the fence name and active theme, and the tabs themselves have a cleaner visual style.
-8. Use the **General**, **Theme**, and **Behavior** tabs to keep related options organized.
+7. On wider windows, the **Theme** tab now uses that extra space better by placing controls side by side to reduce vertical scrolling on lower resolutions.
+8. The live preview now stays outside the main Theme scrolling area and scales down more gracefully, so the controls remain easier to reach on shorter screens.
+9. The settings header now shows quick summary pills for the fence name and active theme, and the tabs themselves have a cleaner visual style.
+10. DeskHaven now reads the current Windows app theme so the settings window follows **light mode** or **dark mode** more naturally instead of forcing the older gray-heavy look.
+11. Use the **General**, **Theme**, and **Behavior** tabs to keep related options organized.
 4. Use the **Title Bar Size** slider or numeric field to adjust the header height.
 5. The title text scales with the header automatically.
 6. Use the **Startup** checkbox in the same settings window if you want DeskHaven to launch automatically when you sign in to Windows.
@@ -26,7 +29,8 @@ Palisades now uses a clean, flat layout inside each fence.
 - Fine-tune **Title Bar Background**, **Fence Background**, **Title Text**, **Shortcut Text**, and **Theme accent / glow** colors using the restored visual mini color pickers, preview swatches, or the **Choose...** buttons if you want the full Windows picker.
 - Pick a **Title font** to change how the fence name and tab titles appear.
 - Use **Choose image...** to place a custom background image behind the shortcuts and adjust its opacity for a stronger or softer effect.
-- The **Live Preview** in the **Theme** tab now shows the full theme composition directly, including the current title bar sizing, shortcut sizing, fence background image, and frame overlay before you close settings.
+- Use **Background layout** to choose whether the art should **Fill**, **Fit**, **Stretch**, stay **Centered**, or **Tile** across the fence.
+- The **Live Preview** in the **Theme** tab now shows the full theme composition directly, including the current title bar sizing, shortcut sizing, fence background image, background layout mode, and frame overlay before you close settings.
 - Use **Choose frame...** to apply a custom PNG-style frame overlay on top of the fence for more decorative theme art, like a futuristic game panel.
 - Use **F2** or right-click an icon and choose **Rename** to edit the shortcut label inline.
 - Use **Ctrl+Click** to select multiple icons, **Ctrl+A** to select all, then press **Delete** or use **Remove selected** to clear them in one action.

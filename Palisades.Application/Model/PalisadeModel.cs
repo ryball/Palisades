@@ -50,6 +50,7 @@ namespace Palisades.Model
         private string themePreset;
         private string titleFontFamilyName;
         private string backgroundImagePath;
+        private string backgroundImageLayout;
         private double backgroundImageOpacity;
         private string frameOverlayPath;
         private double frameOverlayOpacity;
@@ -86,6 +87,7 @@ namespace Palisades.Model
             themePreset = "Midnight";
             titleFontFamilyName = "Segoe UI";
             backgroundImagePath = string.Empty;
+            backgroundImageLayout = "Fill";
             backgroundImageOpacity = 0.22d;
             frameOverlayPath = string.Empty;
             frameOverlayOpacity = 0.9d;
@@ -123,6 +125,7 @@ namespace Palisades.Model
         public string ThemePreset { get { return string.IsNullOrWhiteSpace(themePreset) ? "Midnight" : themePreset; } set { themePreset = string.IsNullOrWhiteSpace(value) ? "Midnight" : value.Trim(); } }
         public string TitleFontFamilyName { get { return string.IsNullOrWhiteSpace(titleFontFamilyName) ? "Segoe UI" : titleFontFamilyName; } set { titleFontFamilyName = string.IsNullOrWhiteSpace(value) ? "Segoe UI" : value.Trim(); } }
         public string BackgroundImagePath { get { return backgroundImagePath ?? string.Empty; } set { backgroundImagePath = value?.Trim() ?? string.Empty; } }
+        public string BackgroundImageLayout { get { return string.IsNullOrWhiteSpace(backgroundImageLayout) ? "Fill" : backgroundImageLayout.Trim(); } set { backgroundImageLayout = string.IsNullOrWhiteSpace(value) ? "Fill" : value.Trim(); } }
         public double BackgroundImageOpacity { get { return backgroundImageOpacity < 0.05d ? 0.22d : Math.Clamp(backgroundImageOpacity, 0.05d, 1d); } set { backgroundImageOpacity = Math.Clamp(value, 0.05d, 1d); } }
         public string FrameOverlayPath { get { return frameOverlayPath ?? string.Empty; } set { frameOverlayPath = value?.Trim() ?? string.Empty; } }
         public double FrameOverlayOpacity { get { return frameOverlayOpacity < 0.05d ? 0.9d : Math.Clamp(frameOverlayOpacity, 0.05d, 1d); } set { frameOverlayOpacity = Math.Clamp(value, 0.05d, 1d); } }
@@ -162,6 +165,7 @@ namespace Palisades.Model
             themePreset = ThemePreset;
             titleFontFamilyName = TitleFontFamilyName;
             backgroundImagePath = BackgroundImagePath;
+            backgroundImageLayout = BackgroundImageLayout;
             backgroundImageOpacity = BackgroundImageOpacity;
             frameOverlayPath = FrameOverlayPath;
             frameOverlayOpacity = FrameOverlayOpacity;
