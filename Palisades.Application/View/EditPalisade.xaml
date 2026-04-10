@@ -59,6 +59,10 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="10" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -86,8 +90,23 @@
             <TextBlock Margin="0,6,0,0" HorizontalAlignment="Center" Text="{Binding HeaderHeight, StringFormat={}Current height: {0}px}" />
         </StackPanel>
 
-        <Label Grid.Row="12" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Startup</Label>
+        <Label Grid.Row="12" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Icon Size</Label>
         <StackPanel Grid.Row="12" Grid.Column="2" HorizontalAlignment="Stretch">
+            <DockPanel LastChildFill="False">
+                <Slider Width="210" Minimum="32" Maximum="96" TickFrequency="4" IsSnapToTickEnabled="True" Value="{Binding IconSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" />
+                <TextBox Width="60" Margin="10,0,0,0" Text="{Binding IconSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" />
+            </DockPanel>
+            <TextBlock Margin="0,6,0,0" HorizontalAlignment="Center" Text="{Binding IconSize, StringFormat={}Current icon size: {0}px}" />
+        </StackPanel>
+
+        <Label Grid.Row="14" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Layout</Label>
+        <StackPanel Grid.Row="14" Grid.Column="2" HorizontalAlignment="Stretch">
+            <CheckBox Content="Lock this fence layout" IsChecked="{Binding IsLayoutLocked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,0" />
+            <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Opacity="0.8" Text="{Binding LayoutLockDescription}" />
+        </StackPanel>
+
+        <Label Grid.Row="16" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Startup</Label>
+        <StackPanel Grid.Row="16" Grid.Column="2" HorizontalAlignment="Stretch">
             <CheckBox Content="{Binding StartupSettingLabel}" IsChecked="{Binding StartWithWindows, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,0" />
             <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Opacity="0.8" Text="You can turn this on or off at any time. It applies to the app globally, not just this fence." />
         </StackPanel>

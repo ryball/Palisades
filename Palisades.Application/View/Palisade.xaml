@@ -115,6 +115,7 @@
                             </MenuItem.ItemContainerStyle>
                         </MenuItem>
                         <MenuItem Header="{Binding Path=Data.CollapseMenuHeader, Source={StaticResource proxy}}" Command="{Binding Path=Data.ToggleCollapsedStateCommand, Source={StaticResource proxy}}" />
+                        <MenuItem Header="Lock layout" IsCheckable="True" IsChecked="{Binding Path=Data.IsLayoutLocked, Source={StaticResource proxy}, Mode=TwoWay}" />
                         <MenuItem Header="Types">
                             <MenuItem Header="Add type..." Command="{Binding Path=Data.AddTypeCommand, Source={StaticResource proxy}}" />
                         </MenuItem>
@@ -124,6 +125,7 @@
                             <Separator />
                             <MenuItem Header="Type" Command="{Binding Path=Data.SortByTypeCommand, Source={StaticResource proxy}}" />
                         </MenuItem>
+                        <MenuItem Header="{Binding Path=Data.RemoveSelectedMenuHeader, Source={StaticResource proxy}}" InputGestureText="Delete" Command="{Binding Path=Data.RemoveAllSelectedShortcutsCommand, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.HasSelectedShortcut, Source={StaticResource proxy}}" />
                         <MenuItem Header="Undo removed icon" InputGestureText="Ctrl+Z" Command="{Binding Path=Data.UndoRemoveShortcutCommand, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.CanUndoShortcutRemoval, Source={StaticResource proxy}}" />
                         <MenuItem Header="Delete" Command="{Binding Path=Data.DeletePalisadeCommand, Source={StaticResource proxy}}" CommandParameter="{Binding Identifier}" />
                         <Separator />
@@ -221,8 +223,48 @@
                         <SolidColorBrush Color="{Binding BodyColor}" />
                     </Rectangle.Fill>
                 </Rectangle>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{Binding Shortcuts}" Margin="20, 20, 20, 20" dd:DragDrop.IsDragSource="True" dd:DragDrop.DragHandler="{Binding}" dd:DragDrop.IsDropTarget="True" dd:DragDrop.DropHandler="{Binding}">
+                <Grid Margin="14,12,14,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0"
+                            Margin="0,0,0,10"
+                            Padding="8,4"
+                            CornerRadius="10"
+                            Background="#22000000">
+                        <DockPanel LastChildFill="True">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Text="Search"
+                                       Margin="4,0,8,0"
+                                       VerticalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Foreground="{Binding TitleColor}" />
+                            <Button DockPanel.Dock="Right"
+                                    Width="24"
+                                    Height="24"
+                                    Margin="8,0,0,0"
+                                    Padding="0"
+                                    BorderThickness="0"
+                                    Background="Transparent"
+                                    Foreground="{Binding TitleColor}"
+                                    Command="{Binding ClearSearchCommand}"
+                                    IsEnabled="{Binding HasActiveSearch}"
+                                    ToolTip="Clear search"
+                                    Cursor="Hand">
+                                <TextBlock Text="✕" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Button>
+                            <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                     BorderThickness="0"
+                                     Background="Transparent"
+                                     Foreground="{Binding LabelsColor}"
+                                     CaretBrush="{Binding TitleColor}"
+                                     VerticalContentAlignment="Center"
+                                     ToolTip="Search shortcuts in this fence" />
+                        </DockPanel>
+                    </Border>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding GroupedShortcuts}" Margin="6, 6, 6, 6" dd:DragDrop.IsDragSource="True" dd:DragDrop.DragHandler="{Binding}" dd:DragDrop.IsDropTarget="True" dd:DragDrop.DropHandler="{Binding}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel />
@@ -233,7 +275,7 @@
                                 <ContentControl>
                                     <ContentControl.ContextMenu>
                                         <ContextMenu>
-                                            <MenuItem Header="Type" ItemsSource="{Binding Path=Data.AvailableTypes, Source={StaticResource proxy}}">
+                                            <MenuItem Header="Type" ItemsSource="{Binding Path=Data.AvailableTypes, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.CanEditShortcuts, Source={StaticResource proxy}}">
                                                 <MenuItem.ItemContainerStyle>
                                                     <Style TargetType="{x:Type MenuItem}">
                                                         <Setter Property="Header" Value="{Binding}" />
@@ -242,10 +284,12 @@
                                                     </Style>
                                                 </MenuItem.ItemContainerStyle>
                                             </MenuItem>
-                                            <MenuItem Header="Add type and assign..." Command="{Binding Path=Data.AddTypeAndAssignToSelectedShortcutCommand, Source={StaticResource proxy}}" />
-                                            <MenuItem Header="Clear type" Command="{Binding Path=Data.ClearSelectedShortcutTypeCommand, Source={StaticResource proxy}}" />
+                                            <MenuItem Header="Add type and assign..." Command="{Binding Path=Data.AddTypeAndAssignToSelectedShortcutCommand, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.CanEditShortcuts, Source={StaticResource proxy}}" />
+                                            <MenuItem Header="Clear type" Command="{Binding Path=Data.ClearSelectedShortcutTypeCommand, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.CanEditShortcuts, Source={StaticResource proxy}}" />
                                             <Separator />
-                                            <MenuItem Header="Remove from fence" InputGestureText="Delete" Command="{Binding Path=Data.RemoveSelectedShortcutCommand, Source={StaticResource proxy}}" CommandParameter="{Binding}" />
+                                            <MenuItem Header="Rename" InputGestureText="F2" Command="{Binding Path=Data.BeginRenameShortcutCommand, Source={StaticResource proxy}}" CommandParameter="{Binding}" IsEnabled="{Binding Path=Data.CanEditShortcuts, Source={StaticResource proxy}}" />
+                                            <MenuItem Header="Remove from fence" InputGestureText="Delete" Command="{Binding Path=Data.RemoveSelectedShortcutCommand, Source={StaticResource proxy}}" CommandParameter="{Binding}" IsEnabled="{Binding Path=Data.CanEditShortcuts, Source={StaticResource proxy}}" />
+                                            <MenuItem Header="{Binding Path=Data.RemoveSelectedMenuHeader, Source={StaticResource proxy}}" InputGestureText="Delete" Command="{Binding Path=Data.RemoveAllSelectedShortcutsCommand, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.HasSelectedShortcut, Source={StaticResource proxy}}" />
                                             <MenuItem Header="Undo last remove" InputGestureText="Ctrl+Z" Command="{Binding Path=Data.UndoRemoveShortcutCommand, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.CanUndoShortcutRemoval, Source={StaticResource proxy}}" />
                                         </ContextMenu>
                                     </ContentControl.ContextMenu>
@@ -260,20 +304,14 @@
                                             <i:InvokeCommandAction Command="{Binding Path=Data.SelectShortcutForContextMenuCommand, Source={StaticResource proxy}}" CommandParameter="{Binding}" />
                                         </i:EventTrigger>
                                     </i:Interaction.Triggers>
-                                    <Border Margin="0,0,10,10" CornerRadius="4" Width="100">
+                                    <Border Margin="0,0,10,10" CornerRadius="4" Width="{Binding Path=Data.ShortcutTileWidth, Source={StaticResource proxy}}">
                                         <Border.Style>
                                             <Style>
                                                 <Style.Triggers>
                                                     <Trigger Property="Border.IsMouseOver" Value="True" >
                                                         <Setter Property="Border.Background" Value="#20FFFFFF" />
                                                     </Trigger>
-                                                    <DataTrigger Value="True">
-                                                        <DataTrigger.Binding>
-                                                            <MultiBinding Converter="{StaticResource MultiValueEqualityConverter}">
-                                                                <Binding Mode="OneWay" />
-                                                                <Binding Path="Data.SelectedShortcut" Source="{StaticResource proxy}" Mode="OneWay" />
-                                                            </MultiBinding>
-                                                        </DataTrigger.Binding>
+                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                                         <Setter Property="Border.Background" Value="#20FFFFFF" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
@@ -282,11 +320,50 @@
                                         <StackPanel VerticalAlignment="Top" HorizontalAlignment="Center" Cursor="Hand">
                                             <Image
                                                 Source="{Binding IconPath, Converter={StaticResource PathToImage}}"
-                                                Width="48"
-                                                Height="48"
+                                                Width="{Binding Path=Data.IconSize, Source={StaticResource proxy}}"
+                                                Height="{Binding Path=Data.IconSize, Source={StaticResource proxy}}"
                                                 Stretch="UniformToFill" Margin="5,5,5,5"
                                             />
-                                            <TextBlock TextWrapping="NoWrap" TextAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding Name}" Foreground="{Binding DataContext.LabelsColor, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" HorizontalAlignment="Center" Margin="5,0,5,2" />
+                                            <Grid Margin="5,0,5,2">
+                                                <TextBlock TextWrapping="NoWrap"
+                                                           TextAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Text="{Binding Name}"
+                                                           MaxWidth="{Binding Path=Data.ShortcutTextMaxWidth, Source={StaticResource proxy}}"
+                                                           Foreground="{Binding DataContext.LabelsColor, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                                           HorizontalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsRenaming}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <TextBox Text="{Binding PendingName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         MaxWidth="{Binding Path=Data.ShortcutTextMaxWidth, Source={StaticResource proxy}}"
+                                                         HorizontalAlignment="Center"
+                                                         HorizontalContentAlignment="Center"
+                                                         VerticalContentAlignment="Center"
+                                                         Padding="2"
+                                                         Loaded="ShortcutRenameTextBox_Loaded"
+                                                         LostFocus="ShortcutRenameTextBox_LostFocus"
+                                                         PreviewKeyDown="ShortcutRenameTextBox_PreviewKeyDown">
+                                                    <TextBox.Style>
+                                                        <Style TargetType="TextBox">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsRenaming}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBox.Style>
+                                                </TextBox>
+                                            </Grid>
                                             <Border HorizontalAlignment="Center" Margin="5,0,5,5" Padding="6,1" Background="#22000000" CornerRadius="8">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
@@ -306,7 +383,8 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                </ScrollViewer>
+                    </ScrollViewer>
+                </Grid>
             </Grid>
         </DockPanel>
     </Border>

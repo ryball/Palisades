@@ -13,6 +13,10 @@ Palisades now uses a clean, flat layout inside each fence.
 
 - Use separate fences like **Games**, **Tools**, or **Work** for your main categories.
 - Drag Windows shortcuts, apps, files, or folders directly into the fence where you want them.
+- Use the built-in **Search** box at the top of a fence to quickly filter shortcuts by name, type, group, or path.
+- Use **F2** or right-click an icon and choose **Rename** to edit the shortcut label inline.
+- Use **Ctrl+Click** to select multiple icons, **Ctrl+A** to select all, then press **Delete** or use **Remove selected** to clear them in one action.
+- Use the **arrow keys** to move the active selection and press **Enter** to launch the currently selected shortcut without touching the mouse.
 - Drag icons between fences to move them from one fence to another.
 - Drag icons back out to the Windows desktop to create desktop shortcuts again, and Palisades now tries to preserve the original shortcut file/icon so the desktop version matches much more closely.
 - Reorder shortcuts within the fence by dragging them.
@@ -25,6 +29,8 @@ Palisades now uses a clean, flat layout inside each fence.
 - Use **Split tab out** to turn the current tab back into its own standalone fence again.
 - Use the **chevron button** in the title bar, or right-click the header and choose **Collapse to title bar**, to shrink a fence down to just its header.
 - Use the same chevron button or **Expand fence** to restore the full fence.
+- Open **DeskHaven Settings** to adjust both the **Title Bar Size** and **Icon Size** for that fence.
+- Turn on **Lock this fence layout** when you want to prevent accidental moves, resizes, drag-and-drop changes, renaming, or removals.
 - If you use multiple Windows virtual desktops, right-click the fence header and use **Visible on desktops** to choose exactly which named desktops should show that fence.
 - Use **Move to desktop** when you want to send the fence to one specific desktop immediately.
 - Right-click the fence header and use **Types → Add type...** to create custom types like `Game`, `Tool`, or `Work`.

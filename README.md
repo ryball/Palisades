@@ -35,7 +35,9 @@ Palisades now supports a full **install / update / uninstall** flow:
 ## Features
 
 - Drag desktop shortcuts, apps, files, or folders directly into a DeskHaven fence.
+- Search inside each fence to quickly filter shortcuts by name, type, group, or path.
 - Reorder shortcuts within a fence, move them between fences, or drag them back to the desktop.
+- Rename icons inline, resize icon tiles, and lock a fence layout when you want to avoid accidental edits.
 - Individually customize the name, colors, title bar size, and whether DeskHaven starts with Windows.
 - Keep each fence clean with a simple flat shortcut layout.
 - Add custom types from the fence right-click menu and assign them to individual icons.
@@ -48,10 +50,13 @@ Palisades now supports a full **install / update / uninstall** flow:
 ## Usage
 Just drag and drop shortcuts in a Palisade to add them. Right click on a Palisade header to edit it, then:
 
-- use the **Title Bar Size** control to resize the header,
+- use the **Title Bar Size** and **Icon Size** controls to resize the fence visuals,
+- rename a selected icon inline with **F2** or by right-clicking it and choosing **Rename**,
+- use **Ctrl+Click** to multi-select icons, **Ctrl+A** to select all, **arrow keys** to move selection, **Enter** to launch, and **Delete** to remove them together,
 - sort shortcuts by **Name** or **Type**,
 - collapse a fence to its title bar,
 - hide fences and restore them from the tray,
+- lock a fence layout from the header menu or settings when you want to prevent accidental moving, resizing, dragging, renaming, or removal,
 - join fences into tabs, drag tabs to reorder them, or drag a tab out to detach it,
 - drag shortcuts between fences or back to the desktop,
 - right-click any icon and choose **Remove from fence** to take it out without deleting the original app or file,

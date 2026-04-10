@@ -34,9 +34,10 @@ namespace Palisades.ViewModel
 
         private ICollectionView groupedShortcuts = null!;
         private volatile bool shouldSave;
+        private readonly ObservableCollection<Shortcut> selectedShortcuts = new();
+        private readonly List<(Shortcut Shortcut, int Index)> lastRemovedShortcuts = new();
+        private string searchQuery = string.Empty;
         private Shortcut? selectedShortcut;
-        private Shortcut? lastRemovedShortcut;
-        private int lastRemovedShortcutIndex = -1;
         private bool isHiddenByUser;
         #endregion
 
@@ -180,6 +181,35 @@ namespace Palisades.ViewModel
             get { return Math.Clamp(HeaderHeight * 0.53d, 18d, 48d); }
         }
 
+        public int IconSize
+        {
+            get { return model.IconSize; }
+            set
+            {
+                int normalized = Math.Clamp(value, PalisadeModel.MinIconSize, PalisadeModel.MaxIconSize);
+                if (model.IconSize == normalized)
+                {
+                    return;
+                }
+
+                model.IconSize = normalized;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShortcutTileWidth));
+                OnPropertyChanged(nameof(ShortcutTextMaxWidth));
+                Save();
+            }
+        }
+
+        public double ShortcutTileWidth
+        {
+            get { return Math.Max(100d, IconSize + 28d); }
+        }
+
+        public double ShortcutTextMaxWidth
+        {
+            get { return Math.Max(84d, IconSize + 20d); }
+        }
+
         public bool IsCollapsed
         {
             get { return model.IsCollapsed; }
@@ -209,6 +239,65 @@ namespace Palisades.ViewModel
         public Visibility BodyVisibility
         {
             get { return IsCollapsed ? Visibility.Collapsed : Visibility.Visible; }
+        }
+
+        public string SearchQuery
+        {
+            get { return searchQuery; }
+            set
+            {
+                string normalized = value ?? string.Empty;
+                if (string.Equals(searchQuery, normalized, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                searchQuery = normalized;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasActiveSearch));
+                groupedShortcuts?.Refresh();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        public bool HasActiveSearch
+        {
+            get { return !string.IsNullOrWhiteSpace(SearchQuery); }
+        }
+
+        public bool IsLayoutLocked
+        {
+            get { return model.IsLayoutLocked; }
+            set
+            {
+                if (model.IsLayoutLocked == value)
+                {
+                    return;
+                }
+
+                model.IsLayoutLocked = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CanEditShortcuts));
+                OnPropertyChanged(nameof(LayoutLockDescription));
+                OnPropertyChanged(nameof(WindowResizeMode));
+                CommandManager.InvalidateRequerySuggested();
+                Save();
+            }
+        }
+
+        public bool CanEditShortcuts
+        {
+            get { return !IsLayoutLocked; }
+        }
+
+        public string LayoutLockDescription
+        {
+            get
+            {
+                return IsLayoutLocked
+                    ? "This fence layout is locked. Unlock it to move, resize, drag, rename, or remove shortcuts."
+                    : "Lock this fence layout to prevent accidental moves, resizing, drag-and-drop changes, renaming, or removals.";
+            }
         }
 
         public string CollapseMenuHeader
@@ -290,7 +379,7 @@ namespace Palisades.ViewModel
 
         public ResizeMode WindowResizeMode
         {
-            get { return IsCollapsed ? ResizeMode.NoResize : ResizeMode.CanResize; }
+            get { return IsCollapsed || IsLayoutLocked ? ResizeMode.NoResize : ResizeMode.CanResize; }
         }
 
         private int CollapsedHeight
@@ -376,25 +465,42 @@ namespace Palisades.ViewModel
         public Shortcut? SelectedShortcut
         {
             get => selectedShortcut;
-            set
+            private set
             {
                 selectedShortcut = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(HasSelectedShortcut));
+                OnPropertyChanged(nameof(HasMultipleSelectedShortcuts));
+                OnPropertyChanged(nameof(SelectedShortcutCount));
+                OnPropertyChanged(nameof(RemoveSelectedMenuHeader));
                 OnPropertyChanged(nameof(SelectedShortcutGroupName));
                 CommandManager.InvalidateRequerySuggested();
-                Save();
             }
         }
 
         public bool HasSelectedShortcut
         {
-            get { return SelectedShortcut != null; }
+            get { return selectedShortcuts.Count > 0; }
+        }
+
+        public bool HasMultipleSelectedShortcuts
+        {
+            get { return selectedShortcuts.Count > 1; }
+        }
+
+        public int SelectedShortcutCount
+        {
+            get { return selectedShortcuts.Count; }
+        }
+
+        public string RemoveSelectedMenuHeader
+        {
+            get { return HasMultipleSelectedShortcuts ? $"Remove selected ({SelectedShortcutCount})" : "Remove selected"; }
         }
 
         public bool CanUndoShortcutRemoval
         {
-            get { return lastRemovedShortcut != null && lastRemovedShortcutIndex >= 0; }
+            get { return lastRemovedShortcuts.Count > 0; }
         }
 
         public string SelectedShortcutGroupName
@@ -402,18 +508,30 @@ namespace Palisades.ViewModel
             get { return SelectedShortcut?.GroupName ?? string.Empty; }
             set
             {
-                if (SelectedShortcut == null)
+                IReadOnlyList<Shortcut> targets = GetSelectedShortcutSnapshot();
+                if (targets.Count == 0)
                 {
                     return;
                 }
 
                 string normalized = NormalizeGroupName(value);
-                if (string.Equals(SelectedShortcut.GroupName, normalized, StringComparison.Ordinal))
+                bool changed = false;
+                foreach (Shortcut shortcut in targets)
+                {
+                    if (string.Equals(shortcut.GroupName, normalized, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    shortcut.GroupName = normalized;
+                    changed = true;
+                }
+
+                if (!changed)
                 {
                     return;
                 }
 
-                SelectedShortcut.GroupName = normalized;
                 RegisterGroup(normalized);
                 RefreshGroups();
                 OnPropertyChanged();
@@ -602,7 +720,7 @@ namespace Palisades.ViewModel
 
         public void MoveSelectedShortcutToGroup(string? groupName)
         {
-            if (SelectedShortcut == null)
+            if (IsLayoutLocked || !HasSelectedShortcut)
             {
                 return;
             }
@@ -612,13 +730,17 @@ namespace Palisades.ViewModel
 
         public void MoveSelectedShortcutToType(string? typeName)
         {
-            if (SelectedShortcut == null)
+            if (IsLayoutLocked || !HasSelectedShortcut)
             {
                 return;
             }
 
             string normalized = NormalizeTypeName(typeName);
-            SelectedShortcut.TypeName = normalized;
+            foreach (Shortcut shortcut in GetSelectedShortcutSnapshot())
+            {
+                shortcut.TypeName = normalized;
+            }
+
             RegisterType(normalized);
             OnPropertyChanged(nameof(AvailableTypes));
             Save();
@@ -679,7 +801,33 @@ namespace Palisades.ViewModel
             groupedShortcuts = CollectionViewSource.GetDefaultView(model.Shortcuts);
             groupedShortcuts.GroupDescriptions.Clear();
             groupedShortcuts.SortDescriptions.Clear();
+            groupedShortcuts.Filter = FilterShortcut;
             groupedShortcuts.Refresh();
+        }
+
+        private bool FilterShortcut(object candidate)
+        {
+            if (candidate is not Shortcut shortcut)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(SearchQuery))
+            {
+                return true;
+            }
+
+            string search = SearchQuery.Trim();
+            return ContainsSearchValue(shortcut.Name, search)
+                || ContainsSearchValue(shortcut.UriOrFileAction, search)
+                || ContainsSearchValue(shortcut.TypeName, search)
+                || ContainsSearchValue(shortcut.GroupName, search);
+        }
+
+        private static bool ContainsSearchValue(string? value, string search)
+        {
+            return !string.IsNullOrWhiteSpace(value)
+                && value.IndexOf(search, StringComparison.CurrentCultureIgnoreCase) >= 0;
         }
 
         private void SubscribeToShortcuts(ObservableCollection<Shortcut> shortcuts)
@@ -711,7 +859,9 @@ namespace Palisades.ViewModel
             {
                 foreach (Shortcut shortcut in e.OldItems)
                 {
+                    shortcut.IsSelected = false;
                     shortcut.PropertyChanged -= Shortcut_PropertyChanged;
+                    selectedShortcuts.Remove(shortcut);
                 }
             }
 
@@ -720,10 +870,23 @@ namespace Palisades.ViewModel
                 foreach (Shortcut shortcut in e.NewItems)
                 {
                     shortcut.GroupName = NormalizeGroupName(shortcut.GroupName);
+                    shortcut.IsSelected = false;
                     shortcut.PropertyChanged -= Shortcut_PropertyChanged;
                     shortcut.PropertyChanged += Shortcut_PropertyChanged;
                     RegisterGroup(shortcut.GroupName);
                 }
+            }
+
+            if (selectedShortcut != null && !selectedShortcuts.Contains(selectedShortcut))
+            {
+                SelectedShortcut = selectedShortcuts.LastOrDefault();
+            }
+            else
+            {
+                OnPropertyChanged(nameof(HasSelectedShortcut));
+                OnPropertyChanged(nameof(HasMultipleSelectedShortcuts));
+                OnPropertyChanged(nameof(SelectedShortcutCount));
+                OnPropertyChanged(nameof(RemoveSelectedMenuHeader));
             }
 
             RefreshGroups();
@@ -732,6 +895,11 @@ namespace Palisades.ViewModel
 
         private void Shortcut_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(Shortcut.PendingName) || e.PropertyName == nameof(Shortcut.IsRenaming) || e.PropertyName == nameof(Shortcut.IsSelected))
+            {
+                return;
+            }
+
             if (e.PropertyName == nameof(Shortcut.GroupName) || e.PropertyName == nameof(Shortcut.Name))
             {
                 if (sender is Shortcut shortcut)
@@ -766,6 +934,35 @@ namespace Palisades.ViewModel
         private void RegisterGroup(string? groupName)
         {
             model.EnsureGroupState(NormalizeGroupName(groupName));
+            OnPropertyChanged(nameof(AvailableGroups));
+        }
+
+        private IReadOnlyList<Shortcut> GetSelectedShortcutSnapshot()
+        {
+            return selectedShortcuts.Where(shortcut => Shortcuts.Contains(shortcut)).ToList();
+        }
+
+        private void ApplyShortcutSelection(IEnumerable<Shortcut> shortcuts, Shortcut? primaryShortcut = null)
+        {
+            HashSet<Shortcut> selectionSet = shortcuts
+                .Where(shortcut => shortcut != null && Shortcuts.Contains(shortcut))
+                .ToHashSet();
+
+            selectedShortcuts.Clear();
+            foreach (Shortcut shortcut in Shortcuts)
+            {
+                bool isSelected = selectionSet.Contains(shortcut);
+                shortcut.IsSelected = isSelected;
+                if (isSelected)
+                {
+                    selectedShortcuts.Add(shortcut);
+                }
+            }
+
+            Shortcut? resolvedPrimary = primaryShortcut != null && selectionSet.Contains(primaryShortcut)
+                ? primaryShortcut
+                : selectedShortcuts.LastOrDefault();
+            SelectedShortcut = resolvedPrimary;
         }
 
         private void RegisterType(string? typeName)
@@ -1277,6 +1474,11 @@ namespace Palisades.ViewModel
 
         public bool CanStartDrag(IDragInfo dragInfo)
         {
+            if (IsLayoutLocked)
+            {
+                return false;
+            }
+
             return GetDraggedShortcuts(dragInfo.SourceItems ?? dragInfo.Data).Count > 0;
         }
 
@@ -1332,6 +1534,13 @@ namespace Palisades.ViewModel
 
         public void DragOver(IDropInfo dropInfo)
         {
+            if (IsLayoutLocked)
+            {
+                dropInfo.Effects = DragDropEffects.None;
+                dropInfo.NotHandled = false;
+                return;
+            }
+
             List<Shortcut> draggedShortcuts = GetDraggedShortcuts(dropInfo.Data);
             if (draggedShortcuts.Count == 0)
             {
@@ -1364,6 +1573,12 @@ namespace Palisades.ViewModel
 
         public void Drop(IDropInfo dropInfo)
         {
+            if (IsLayoutLocked)
+            {
+                dropInfo.NotHandled = false;
+                return;
+            }
+
             List<Shortcut> draggedShortcuts = GetDraggedShortcuts(dropInfo.Data);
             if (draggedShortcuts.Count == 0)
             {
@@ -1518,7 +1733,7 @@ namespace Palisades.ViewModel
         {
             get
             {
-                return new RelayCommand(() => AddTypeFromPrompt(false));
+                return new RelayCommand(() => AddTypeFromPrompt(false), () => CanEditShortcuts);
             }
         }
 
@@ -1526,7 +1741,7 @@ namespace Palisades.ViewModel
         {
             get
             {
-                return new RelayCommand<string>((typeName) => MoveSelectedShortcutToType(typeName));
+                return new RelayCommand<string>((typeName) => MoveSelectedShortcutToType(typeName), () => CanEditShortcuts && HasSelectedShortcut);
             }
         }
 
@@ -1534,7 +1749,7 @@ namespace Palisades.ViewModel
         {
             get
             {
-                return new RelayCommand(() => AddTypeFromPrompt(true));
+                return new RelayCommand(() => AddTypeFromPrompt(true), () => CanEditShortcuts && HasSelectedShortcut);
             }
         }
 
@@ -1542,7 +1757,7 @@ namespace Palisades.ViewModel
         {
             get
             {
-                return new RelayCommand(() => MoveSelectedShortcutToType(null));
+                return new RelayCommand(() => MoveSelectedShortcutToType(null), () => CanEditShortcuts && HasSelectedShortcut);
             }
         }
 
@@ -1580,6 +1795,11 @@ namespace Palisades.ViewModel
         public void DropShortcutsHandler(DragEventArgs dragEventArgs)
         {
             dragEventArgs.Handled = true;
+            if (IsLayoutLocked)
+            {
+                dragEventArgs.Effects = DragDropEffects.None;
+                return;
+            }
             if (dragEventArgs.Data.GetDataPresent(ShortcutDragDataFormat))
             {
                 dragEventArgs.Handled = false;
@@ -1620,18 +1840,99 @@ namespace Palisades.ViewModel
                 return;
             }
 
-            SelectedShortcut = shortcut;
+            if (selectedShortcuts.Contains(shortcut))
+            {
+                SelectedShortcut = shortcut;
+                return;
+            }
+
+            ApplyShortcutSelection(new[] { shortcut }, shortcut);
         }
 
         public void ToggleShortcutSelection(Shortcut shortcut)
         {
-            if (SelectedShortcut == shortcut)
+            if (shortcut == null)
             {
-                SelectedShortcut = null;
                 return;
             }
 
+            bool extendSelection = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+            if (!extendSelection)
+            {
+                ApplyShortcutSelection(new[] { shortcut }, shortcut);
+                return;
+            }
+
+            List<Shortcut> updatedSelection = GetSelectedShortcutSnapshot().ToList();
+            if (updatedSelection.Contains(shortcut))
+            {
+                updatedSelection.Remove(shortcut);
+            }
+            else
+            {
+                updatedSelection.Add(shortcut);
+            }
+
+            ApplyShortcutSelection(updatedSelection, updatedSelection.Contains(shortcut) ? shortcut : updatedSelection.LastOrDefault());
+        }
+
+        public ICommand BeginRenameShortcutCommand
+        {
+            get
+            {
+                return new RelayCommand<Shortcut>(BeginRenameShortcut);
+            }
+        }
+
+        public void BeginRenameShortcut(Shortcut? shortcut)
+        {
+            if (shortcut == null || IsLayoutLocked || !Shortcuts.Contains(shortcut))
+            {
+                return;
+            }
+
+            foreach (Shortcut existingShortcut in Shortcuts.Where(item => !ReferenceEquals(item, shortcut) && item.IsRenaming))
+            {
+                existingShortcut.PendingName = existingShortcut.Name;
+                existingShortcut.IsRenaming = false;
+            }
+
             SelectedShortcut = shortcut;
+            shortcut.PendingName = shortcut.Name;
+            shortcut.IsRenaming = true;
+        }
+
+        public void CommitRenameShortcut(Shortcut? shortcut)
+        {
+            if (shortcut == null)
+            {
+                return;
+            }
+
+            string originalName = shortcut.Name;
+            string normalized = string.IsNullOrWhiteSpace(shortcut.PendingName) ? originalName : shortcut.PendingName.Trim();
+            shortcut.IsRenaming = false;
+            shortcut.PendingName = normalized;
+
+            if (string.Equals(originalName, normalized, StringComparison.CurrentCulture))
+            {
+                return;
+            }
+
+            shortcut.Name = normalized;
+            RefreshGroups();
+            Save();
+        }
+
+        public void CancelRenameShortcut(Shortcut? shortcut)
+        {
+            if (shortcut == null)
+            {
+                return;
+            }
+
+            shortcut.PendingName = shortcut.Name;
+            shortcut.IsRenaming = false;
         }
 
         public ICommand MoveSelectedShortcutToGroupCommand
@@ -1647,6 +1948,14 @@ namespace Palisades.ViewModel
             get
             {
                 return new RelayCommand<Shortcut>((shortcut) => RemoveShortcut(shortcut));
+            }
+        }
+
+        public ICommand RemoveAllSelectedShortcutsCommand
+        {
+            get
+            {
+                return new RelayCommand(RemoveSelectedShortcuts, () => CanEditShortcuts && HasSelectedShortcut);
             }
         }
 
@@ -1673,10 +1982,50 @@ namespace Palisades.ViewModel
                 return;
             }
 
+            if (Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase)
+            {
+                return;
+            }
+
             Key pressedKey = keyEventArgs.Key == Key.System ? keyEventArgs.SystemKey : keyEventArgs.Key;
             if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && pressedKey == Key.Z)
             {
                 UndoLastShortcutRemoval();
+                keyEventArgs.Handled = true;
+                return;
+            }
+
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && pressedKey == Key.A)
+            {
+                ApplyShortcutSelection(Shortcuts, SelectedShortcut ?? Shortcuts.FirstOrDefault());
+                keyEventArgs.Handled = true;
+                return;
+            }
+
+            if (pressedKey == Key.Escape)
+            {
+                ApplyShortcutSelection(Array.Empty<Shortcut>());
+                keyEventArgs.Handled = true;
+                return;
+            }
+
+            if (pressedKey == Key.F2)
+            {
+                BeginRenameShortcut(SelectedShortcut);
+                keyEventArgs.Handled = true;
+                return;
+            }
+
+            if (pressedKey == Key.Enter)
+            {
+                LaunchSelectedShortcut();
+                keyEventArgs.Handled = true;
+                return;
+            }
+
+            if (pressedKey == Key.Left || pressedKey == Key.Right || pressedKey == Key.Up || pressedKey == Key.Down)
+            {
+                MoveKeyboardSelection(pressedKey, (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control);
                 keyEventArgs.Handled = true;
                 return;
             }
@@ -1692,60 +2041,136 @@ namespace Palisades.ViewModel
 
         public void DeleteShortcut()
         {
-            RemoveShortcut(SelectedShortcut);
+            RemoveSelectedShortcuts();
+        }
+
+        public void RemoveSelectedShortcuts()
+        {
+            RemoveShortcuts(GetSelectedShortcutSnapshot());
         }
 
         public void RemoveShortcut(Shortcut? shortcut)
         {
-            Shortcut? shortcutToRemove = shortcut ?? SelectedShortcut;
-            if (shortcutToRemove == null)
+            if (shortcut == null)
+            {
+                RemoveSelectedShortcuts();
+                return;
+            }
+
+            RemoveShortcuts(new[] { shortcut });
+        }
+
+        private void RemoveShortcuts(IEnumerable<Shortcut> shortcutsToRemove)
+        {
+            if (IsLayoutLocked)
             {
                 return;
             }
 
-            int removedIndex = Shortcuts.IndexOf(shortcutToRemove);
-            if (removedIndex < 0)
+            List<(Shortcut Shortcut, int Index)> removalBatch = shortcutsToRemove
+                .Where(shortcut => shortcut != null)
+                .Distinct()
+                .Select(shortcut => (Shortcut: shortcut, Index: Shortcuts.IndexOf(shortcut)))
+                .Where(entry => entry.Index >= 0)
+                .OrderByDescending(entry => entry.Index)
+                .ToList();
+
+            if (removalBatch.Count == 0)
             {
                 return;
             }
 
-            lastRemovedShortcut = shortcutToRemove;
-            lastRemovedShortcutIndex = removedIndex;
+            lastRemovedShortcuts.Clear();
+            lastRemovedShortcuts.AddRange(removalBatch.OrderBy(entry => entry.Index));
 
-            Shortcuts.Remove(shortcutToRemove);
-            if (ReferenceEquals(SelectedShortcut, shortcutToRemove))
+            foreach ((Shortcut shortcut, _) in removalBatch)
             {
-                SelectedShortcut = null;
+                shortcut.IsSelected = false;
+                Shortcuts.Remove(shortcut);
+                selectedShortcuts.Remove(shortcut);
             }
 
+            SelectedShortcut = selectedShortcuts.LastOrDefault();
             OnPropertyChanged(nameof(CanUndoShortcutRemoval));
             CommandManager.InvalidateRequerySuggested();
         }
 
         public void UndoLastShortcutRemoval()
         {
-            if (lastRemovedShortcut == null || lastRemovedShortcutIndex < 0)
+            if (lastRemovedShortcuts.Count == 0)
             {
                 return;
             }
 
-            if (Shortcuts.Contains(lastRemovedShortcut))
+            foreach ((Shortcut shortcut, int index) in lastRemovedShortcuts.OrderBy(entry => entry.Index))
             {
-                SelectedShortcut = lastRemovedShortcut;
-                lastRemovedShortcut = null;
-                lastRemovedShortcutIndex = -1;
-                OnPropertyChanged(nameof(CanUndoShortcutRemoval));
-                CommandManager.InvalidateRequerySuggested();
-                return;
+                if (Shortcuts.Contains(shortcut))
+                {
+                    continue;
+                }
+
+                int restoreIndex = Math.Min(index, Shortcuts.Count);
+                Shortcuts.Insert(restoreIndex, shortcut);
             }
 
-            int restoreIndex = Math.Min(lastRemovedShortcutIndex, Shortcuts.Count);
-            Shortcuts.Insert(restoreIndex, lastRemovedShortcut);
-            SelectedShortcut = lastRemovedShortcut;
-            lastRemovedShortcut = null;
-            lastRemovedShortcutIndex = -1;
+            ApplyShortcutSelection(lastRemovedShortcuts.Select(entry => entry.Shortcut), lastRemovedShortcuts.Last().Shortcut);
+            lastRemovedShortcuts.Clear();
             OnPropertyChanged(nameof(CanUndoShortcutRemoval));
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void LaunchSelectedShortcut()
+        {
+            if (SelectedShortcut == null || string.IsNullOrWhiteSpace(SelectedShortcut.UriOrFileAction))
+            {
+                return;
+            }
+
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = SelectedShortcut.UriOrFileAction,
+                    UseShellExecute = true
+                });
+            }
+            catch
+            {
+                // Ignore launch failures so keyboard navigation never crashes the app.
+            }
+        }
+
+        private void MoveKeyboardSelection(Key directionKey, bool extendSelection)
+        {
+            if (Shortcuts.Count == 0)
+            {
+                return;
+            }
+
+            int currentIndex = SelectedShortcut != null ? Shortcuts.IndexOf(SelectedShortcut) : -1;
+            if (currentIndex < 0)
+            {
+                ApplyShortcutSelection(new[] { Shortcuts[0] }, Shortcuts[0]);
+                return;
+            }
+
+            int step = directionKey == Key.Left || directionKey == Key.Up ? -1 : 1;
+            int nextIndex = Math.Clamp(currentIndex + step, 0, Shortcuts.Count - 1);
+            Shortcut nextShortcut = Shortcuts[nextIndex];
+
+            if (!extendSelection)
+            {
+                ApplyShortcutSelection(new[] { nextShortcut }, nextShortcut);
+                return;
+            }
+
+            List<Shortcut> updatedSelection = GetSelectedShortcutSnapshot().ToList();
+            if (!updatedSelection.Contains(nextShortcut))
+            {
+                updatedSelection.Add(nextShortcut);
+            }
+
+            ApplyShortcutSelection(updatedSelection, nextShortcut);
         }
 
         /// <summary>

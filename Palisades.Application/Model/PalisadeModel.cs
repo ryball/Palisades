@@ -27,6 +27,9 @@ namespace Palisades.Model
         public const int DefaultHeaderHeight = 60;
         public const int MinHeaderHeight = 36;
         public const int MaxHeaderHeight = 120;
+        public const int DefaultIconSize = 48;
+        public const int MinIconSize = 32;
+        public const int MaxIconSize = 96;
         public const int DefaultFenceHeight = 450;
 
         private string identifier;
@@ -39,7 +42,9 @@ namespace Palisades.Model
         private int width;
         private int height;
         private int headerHeight;
+        private int iconSize;
         private bool isCollapsed;
+        private bool isLayoutLocked;
         private ObservableCollection<Shortcut> shortcuts;
         private ObservableCollection<PalisadeGroupState> groupStates;
         private ObservableCollection<string> types;
@@ -63,7 +68,9 @@ namespace Palisades.Model
             width = 800;
             height = DefaultFenceHeight;
             headerHeight = DefaultHeaderHeight;
+            iconSize = DefaultIconSize;
             isCollapsed = false;
+            isLayoutLocked = false;
             shortcuts = new();
             groupStates = new();
             types = new();
@@ -86,7 +93,13 @@ namespace Palisades.Model
             get { return headerHeight < MinHeaderHeight ? DefaultHeaderHeight : headerHeight; }
             set { headerHeight = Math.Clamp(value, MinHeaderHeight, MaxHeaderHeight); }
         }
+        public int IconSize
+        {
+            get { return iconSize < MinIconSize ? DefaultIconSize : iconSize; }
+            set { iconSize = Math.Clamp(value, MinIconSize, MaxIconSize); }
+        }
         public bool IsCollapsed { get { return isCollapsed; } set { isCollapsed = value; } }
+        public bool IsLayoutLocked { get { return isLayoutLocked; } set { isLayoutLocked = value; } }
 
         public Color HeaderColor { get { return headerColor; } set { headerColor = value; } }
         public Color BodyColor { get { return bodyColor; } set { bodyColor = value; } }
@@ -106,6 +119,7 @@ namespace Palisades.Model
         public void EnsureDefaults()
         {
             headerHeight = HeaderHeight;
+            iconSize = IconSize;
             height = Math.Max(height, HeaderHeight);
             tabGroupId = TabGroupId;
             activeTabIdentifier = ActiveTabIdentifier;

@@ -1,4 +1,5 @@
-﻿using Palisades.ViewModel;
+﻿using Palisades.Model;
+using Palisades.ViewModel;
 using System;
 using System.IO;
 using System.Windows;
@@ -6,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace Palisades.View
 {
@@ -46,6 +48,11 @@ namespace Palisades.View
 
         private void Header_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            if (viewModel.IsLayoutLocked)
+            {
+                return;
+            }
+
             base.OnMouseLeftButtonDown(e);
 
             try
@@ -181,6 +188,50 @@ namespace Palisades.View
 
             string? groupName = (expander.DataContext as CollectionViewGroup)?.Name?.ToString();
             viewModel.SetGroupExpanded(groupName, false);
+        }
+
+        private void ShortcutRenameTextBox_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is not TextBox textBox)
+            {
+                return;
+            }
+
+            textBox.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                textBox.Focus();
+                textBox.SelectAll();
+            }), DispatcherPriority.Input);
+        }
+
+        private void ShortcutRenameTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is TextBox textBox && textBox.DataContext is Shortcut shortcut)
+            {
+                viewModel.CommitRenameShortcut(shortcut);
+            }
+        }
+
+        private void ShortcutRenameTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (sender is not TextBox textBox || textBox.DataContext is not Shortcut shortcut)
+            {
+                return;
+            }
+
+            Key pressedKey = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (pressedKey == Key.Enter)
+            {
+                viewModel.CommitRenameShortcut(shortcut);
+                e.Handled = true;
+                return;
+            }
+
+            if (pressedKey == Key.Escape)
+            {
+                viewModel.CancelRenameShortcut(shortcut);
+                e.Handled = true;
+            }
         }
     }
 }

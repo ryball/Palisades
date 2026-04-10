@@ -20,6 +20,9 @@ namespace Palisades.Model
         private string sourceShortcutPath;
         private string groupName;
         private string typeName;
+        private bool isSelected;
+        private bool isRenaming;
+        private string pendingName;
 
         public Shortcut() : this("", "", "")
         {
@@ -34,9 +37,25 @@ namespace Palisades.Model
             sourceShortcutPath = string.Empty;
             groupName = PalisadeModel.DefaultGroupName;
             typeName = string.Empty;
+            isSelected = false;
+            isRenaming = false;
+            pendingName = name;
         }
 
-        public string Name { get { return name; } set { name = value; OnPropertyChanged(); } }
+        public string Name
+        {
+            get { return name; }
+            set
+            {
+                name = string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+                if (!IsRenaming)
+                {
+                    pendingName = name;
+                }
+
+                OnPropertyChanged();
+            }
+        }
 
         public string IconPath { get { return iconPath; } set { iconPath = value; OnPropertyChanged(); } }
         public string UriOrFileAction { get { return uriOrFileAction; } set { uriOrFileAction = value; OnPropertyChanged(); } }
@@ -75,6 +94,39 @@ namespace Palisades.Model
             set
             {
                 typeName = string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+                OnPropertyChanged();
+            }
+        }
+
+        [XmlIgnore]
+        public bool IsSelected
+        {
+            get { return isSelected; }
+            set
+            {
+                isSelected = value;
+                OnPropertyChanged();
+            }
+        }
+
+        [XmlIgnore]
+        public bool IsRenaming
+        {
+            get { return isRenaming; }
+            set
+            {
+                isRenaming = value;
+                OnPropertyChanged();
+            }
+        }
+
+        [XmlIgnore]
+        public string PendingName
+        {
+            get { return string.IsNullOrWhiteSpace(pendingName) ? Name : pendingName; }
+            set
+            {
+                pendingName = value ?? string.Empty;
                 OnPropertyChanged();
             }
         }
