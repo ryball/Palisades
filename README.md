@@ -35,14 +35,14 @@ Palisades now supports a full **install / update / uninstall** flow:
 ## Features
 
 - Drag desktop shortcuts, apps, files, or folders directly into a DeskHaven fence.
-- Search inside each fence to quickly filter shortcuts by name, type, group, or path.
+- Search inside each fence to quickly filter shortcuts by name, type, group, or path, and turn that search bar on or off per fence.
 - Reorder shortcuts within a fence, move them between fences, or drag them back to the desktop.
 - Rename icons inline, resize icon tiles, and lock a fence layout when you want to avoid accidental edits.
-- Individually customize the name, colors, title bar size, and whether DeskHaven starts with Windows.
+- Individually customize the name, theme preset, glow accent, background image, theme frame overlay, title font, colors, title bar size, and whether DeskHaven starts with Windows.
 - Keep each fence clean with a simple flat shortcut layout.
 - Add custom types from the fence right-click menu and assign them to individual icons.
 - Sort shortcuts from the fence right-click menu by name or type.
-- Collapse fences, hide them to the tray, and restore them later.
+- Collapse fences, hide them to the tray, restore them later, and choose whether each fence should appear in `Alt+Tab`.
 - Join multiple fences into tabs, reorder tabs, and detach tabs back into standalone fences.
 - Choose which Windows virtual desktops each fence should appear on.
 - Install, update, and uninstall Palisades cleanly.
@@ -50,9 +50,9 @@ Palisades now supports a full **install / update / uninstall** flow:
 ## Usage
 Just drag and drop shortcuts in a Palisade to add them. Right click on a Palisade header to edit it, then:
 
-- use the **Title Bar Size** and **Icon Size** controls to resize the fence visuals,
+- use the **theme preset**, **background image**, **title font**, **Title Bar Size**, **Icon Size**, and **Show search bar in this fence** settings to fully style each fence,
 - rename a selected icon inline with **F2** or by right-clicking it and choosing **Rename**,
-- use **Ctrl+Click** to multi-select icons, **Ctrl+A** to select all, **arrow keys** to move selection, **Enter** to launch, and **Delete** to remove them together,
+- use **Ctrl+Click** to multi-select icons, **Ctrl+A** to select all, **arrow keys** to move selection, **Enter** to launch, **Ctrl+Z** to undo the last shortcut change, **Ctrl+Y** to redo it, and **Delete** to remove selected items together,
 - sort shortcuts by **Name** or **Type**,
 - collapse a fence to its title bar,
 - hide fences and restore them from the tray,
@@ -60,7 +60,7 @@ Just drag and drop shortcuts in a Palisade to add them. Right click on a Palisad
 - join fences into tabs, drag tabs to reorder them, or drag a tab out to detach it,
 - drag shortcuts between fences or back to the desktop,
 - right-click any icon and choose **Remove from fence** to take it out without deleting the original app or file,
-- use **Undo removed icon** or press **Ctrl+Z** to bring back the last icon you removed from that fence.
+- use **Undo last change** or **Redo last change** from the icon menu, or press **Ctrl+Z** / **Ctrl+Y**, to step backward or forward through recent rename, remove, sort, group, and type changes in that fence.
 
 ## Techs used
 

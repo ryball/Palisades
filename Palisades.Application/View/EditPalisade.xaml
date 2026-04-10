@@ -9,16 +9,20 @@
         xmlns:converters="clr-namespace:Palisades.Converters"
         mc:Ignorable="d"
         Title="DeskHaven Settings"
-        Width="500"
-        SizeToContent="Height"
+        Width="860"
+        Height="720"
+        MinWidth="640"
+        MinHeight="540"
+        SizeToContent="Manual"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         TextElement.FontWeight="Regular"
-        TextOptions.TextFormattingMode="Ideal" 
-        TextOptions.TextRenderingMode="Auto"        
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="Auto"
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}"
         Style="{StaticResource MaterialDesignWindow}"
-        ResizeMode="NoResize"
+        ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False">
     <Window.Resources>
         <ResourceDictionary>
@@ -27,89 +31,593 @@
                 <ResourceDictionary>
                     <Style TargetType="TextBox">
                         <Setter Property="VerticalAlignment" Value="Center" />
-                        <Setter Property="HorizontalAlignment" Value="Left" />
+                        <Setter Property="HorizontalAlignment" Value="Stretch" />
                         <Setter Property="Margin" Value="0,5,0,5" />
                     </Style>
-                    
+
+                    <Style TargetType="Button">
+                        <Setter Property="MinWidth" Value="96" />
+                    </Style>
+
                     <Style TargetType="colorpicker:PortableColorPicker">
                         <Setter Property="FontSize" Value="18" />
                     </Style>
+
+                    <Style x:Key="SettingsCardStyle" TargetType="Border">
+                        <Setter Property="Margin" Value="0,0,14,14" />
+                        <Setter Property="Padding" Value="16" />
+                        <Setter Property="CornerRadius" Value="10" />
+                        <Setter Property="Background" Value="#14000000" />
+                        <Setter Property="BorderBrush" Value="#26000000" />
+                        <Setter Property="BorderThickness" Value="1" />
+                    </Style>
+
+                    <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="20" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Margin" Value="0,0,0,12" />
+                    </Style>
+
+                    <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="14" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Margin" Value="0,10,0,0" />
+                    </Style>
+
+                    <Style x:Key="HintTextStyle" TargetType="TextBlock">
+                        <Setter Property="Margin" Value="0,6,0,0" />
+                        <Setter Property="TextWrapping" Value="Wrap" />
+                        <Setter Property="Opacity" Value="0.78" />
+                    </Style>
+
+                    <Style x:Key="ValueChipStyle" TargetType="Border">
+                        <Setter Property="Margin" Value="10,0,0,0" />
+                        <Setter Property="Padding" Value="10,4" />
+                        <Setter Property="CornerRadius" Value="999" />
+                        <Setter Property="Background" Value="#16000000" />
+                        <Setter Property="BorderBrush" Value="#28000000" />
+                        <Setter Property="BorderThickness" Value="1" />
+                        <Setter Property="VerticalAlignment" Value="Center" />
+                    </Style>
+
+                    <Style x:Key="ActionButtonStyle" TargetType="Button">
+                        <Setter Property="MinWidth" Value="118" />
+                        <Setter Property="Padding" Value="12,6" />
+                        <Setter Property="Margin" Value="0,0,8,8" />
+                    </Style>
+
+                    <Style x:Key="InfoPillStyle" TargetType="Border">
+                        <Setter Property="Margin" Value="0,0,8,8" />
+                        <Setter Property="Padding" Value="10,4" />
+                        <Setter Property="CornerRadius" Value="999" />
+                        <Setter Property="Background" Value="#16000000" />
+                        <Setter Property="BorderBrush" Value="#28000000" />
+                        <Setter Property="BorderThickness" Value="1" />
+                    </Style>
+
+                    <Style x:Key="OptionCardStyle" TargetType="Border">
+                        <Setter Property="Margin" Value="0,8,0,0" />
+                        <Setter Property="Padding" Value="12" />
+                        <Setter Property="CornerRadius" Value="10" />
+                        <Setter Property="Background" Value="#12000000" />
+                        <Setter Property="BorderBrush" Value="#22000000" />
+                        <Setter Property="BorderThickness" Value="1" />
+                    </Style>
+
+                    <Style x:Key="SettingsTabItemStyle" TargetType="TabItem">
+                        <Setter Property="Margin" Value="0,0,8,0" />
+                        <Setter Property="Padding" Value="14,8" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TabItem">
+                                    <Border x:Name="TabBorder"
+                                            Padding="{TemplateBinding Padding}"
+                                            Background="#14000000"
+                                            BorderBrush="#22000000"
+                                            BorderThickness="1"
+                                            CornerRadius="10,10,0,0">
+                                        <ContentPresenter HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"
+                                                          ContentSource="Header" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="TabBorder" Property="Background" Value="#1C000000" />
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="TabBorder" Property="Background" Value="#22FFFFFF" />
+                                            <Setter TargetName="TabBorder" Property="BorderBrush" Value="#36FFFFFF" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
                     <converters:SolidBrushToColor x:Key="brushConverter" />
+                    <converters:PathToImageConverter x:Key="PathToImage" />
                 </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
-    <Grid Margin="10" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="10" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Label Grid.Row="0" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Name</Label>
-        <TextBox Style="{StaticResource MaterialDesignTextBox}" FontSize="24" Grid.Column="2" Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"  />
+        <Border Grid.Row="0"
+                Padding="18,16"
+                Background="#12000000"
+                BorderBrush="#1FFFFFFF"
+                BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-        <Label Grid.Row="2" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Header Color</Label>
-        <colorpicker:PortableColorPicker Grid.Row="2" Grid.Column="2" SelectedColor="{Binding HeaderColor, Mode=TwoWay}" Width="80" HorizontalAlignment="Center" Style="{StaticResource DefaultColorPickerStyle}" />
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="DeskHaven Settings" FontSize="28" FontWeight="SemiBold" />
+                    <TextBlock Margin="0,4,0,0"
+                               Style="{StaticResource HintTextStyle}"
+                               Text="Resize this window and the layout will adapt automatically while keeping all controls accessible." />
+                </StackPanel>
 
-        <Label Grid.Row="4" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Body Color</Label>
-        <colorpicker:PortableColorPicker Grid.Row="4" Grid.Column="2" SelectedColor="{Binding BodyColor, Mode=TwoWay}" Width="80" HorizontalAlignment="Center" Style="{StaticResource DefaultColorPickerStyle}" />
+                <WrapPanel Grid.Column="1"
+                           Margin="16,0,0,0"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center">
+                    <Border Style="{StaticResource InfoPillStyle}" Margin="0,0,8,8">
+                        <TextBlock Text="{Binding Name, StringFormat=Fence: {0}}" FontWeight="SemiBold" />
+                    </Border>
+                    <Border Style="{StaticResource InfoPillStyle}" Margin="0,0,0,8">
+                        <TextBlock Text="{Binding SelectedThemePreset, StringFormat=Theme: {0}}" FontWeight="SemiBold" />
+                    </Border>
+                </WrapPanel>
+            </Grid>
+        </Border>
 
-        <Label Grid.Row="6" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Title Color</Label>
-        <colorpicker:PortableColorPicker Grid.Row="6" Grid.Column="2" SelectedColor="{Binding TitleColor, Converter={StaticResource brushConverter}, Mode=TwoWay}" Width="80" HorizontalAlignment="Center" Style="{StaticResource DefaultColorPickerStyle}" />
+        <TabControl Grid.Row="1"
+                    Margin="14,14,14,8"
+                    FontSize="14"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    ItemContainerStyle="{StaticResource SettingsTabItemStyle}">
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🧩" Margin="0,0,6,0" />
+                        <TextBlock Text="General" />
+                    </StackPanel>
+                </TabItem.Header>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="10">
+                    <StackPanel>
+                        <Border Style="{StaticResource SettingsCardStyle}" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="General" />
 
-        <Label Grid.Row="8" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Labels Color</Label>
-        <colorpicker:PortableColorPicker Grid.Row="8" Grid.Column="2" SelectedColor="{Binding LabelsColor, Converter={StaticResource brushConverter}, Mode=TwoWay}" Width="80" HorizontalAlignment="Center" Style="{StaticResource DefaultColorPickerStyle}" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Fence name" />
+                                <TextBox Style="{StaticResource MaterialDesignTextBox}"
+                                         FontSize="22"
+                                         Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
-        <Label Grid.Row="10" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Title Bar Size</Label>
-        <StackPanel Grid.Row="10" Grid.Column="2" HorizontalAlignment="Stretch">
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Title bar size" />
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="72" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider Grid.Column="0"
+                                            Minimum="36"
+                                            Maximum="120"
+                                            TickFrequency="4"
+                                            IsSnapToTickEnabled="True"
+                                            Value="{Binding HeaderHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            VerticalAlignment="Center" />
+                                    <TextBox Grid.Column="1"
+                                             Margin="10,0,0,0"
+                                             Text="{Binding HeaderHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             HorizontalContentAlignment="Center" />
+                                    <Border Grid.Column="2" Style="{StaticResource ValueChipStyle}">
+                                        <TextBlock Text="{Binding HeaderHeight, StringFormat={}{0}px}" FontWeight="SemiBold" />
+                                    </Border>
+                                </Grid>
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Icon size" />
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="72" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider Grid.Column="0"
+                                            Minimum="32"
+                                            Maximum="96"
+                                            TickFrequency="4"
+                                            IsSnapToTickEnabled="True"
+                                            Value="{Binding IconSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            VerticalAlignment="Center" />
+                                    <TextBox Grid.Column="1"
+                                             Margin="10,0,0,0"
+                                             Text="{Binding IconSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             HorizontalContentAlignment="Center" />
+                                    <Border Grid.Column="2" Style="{StaticResource ValueChipStyle}">
+                                        <TextBlock Text="{Binding IconSize, StringFormat={}{0}px}" FontWeight="SemiBold" />
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCardStyle}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Startup" />
+                                <Border Style="{StaticResource OptionCardStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="🪟" FontSize="20" Margin="0,0,12,0" VerticalAlignment="Top" />
+                                        <StackPanel Grid.Column="1">
+                                            <CheckBox Content="{Binding StartupSettingLabel}"
+                                                      IsChecked="{Binding StartWithWindows, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      Margin="0" />
+                                            <TextBlock Style="{StaticResource HintTextStyle}"
+                                                       Text="You can turn this on or off at any time. It applies to the app globally, not just this fence." />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🎨" Margin="0,0,6,0" />
+                        <TextBlock Text="Theme" />
+                    </StackPanel>
+                </TabItem.Header>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="10">
+                    <WrapPanel Orientation="Horizontal" ItemWidth="360">
+                        <Border Style="{StaticResource SettingsCardStyle}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Theme Builder" />
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Theme preset" />
+                                <ComboBox Margin="0,6,0,0"
+                                          ItemsSource="{Binding AvailableThemePresets}"
+                                          SelectedItem="{Binding SelectedThemePreset, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Margin="0,6,0,0"
+                                           Style="{StaticResource HintTextStyle}"
+                                           Text="Pick `Galactic` for a sci-fi look close to your example, then tweak colors and overlays to make it your own." />
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Title font" />
+                                <ComboBox Margin="0,6,0,0"
+                                          ItemsSource="{Binding AvailableTitleFonts}"
+                                          SelectedItem="{Binding SelectedTitleFontName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          MaxDropDownHeight="260"
+                                          IsTextSearchEnabled="True" />
+
+                                <WrapPanel Margin="0,12,0,2">
+                                    <Border Style="{StaticResource InfoPillStyle}">
+                                        <TextBlock Text="{Binding SelectedThemePreset, StringFormat=Preset: {0}}" FontWeight="SemiBold" />
+                                    </Border>
+                                    <Border Style="{StaticResource InfoPillStyle}">
+                                        <TextBlock Text="{Binding SelectedTitleFontName, StringFormat=Font: {0}}" FontWeight="SemiBold" />
+                                    </Border>
+                                    <Border Style="{StaticResource InfoPillStyle}">
+                                        <TextBlock Text="{Binding BackgroundImageLabel, StringFormat=Background: {0}}" FontWeight="SemiBold" />
+                                    </Border>
+                                    <Border Style="{StaticResource InfoPillStyle}">
+                                        <TextBlock Text="{Binding FrameOverlayLabel, StringFormat=Overlay: {0}}" FontWeight="SemiBold" />
+                                    </Border>
+                                </WrapPanel>
+
+                                <Border Style="{StaticResource OptionCardStyle}" Margin="0,12,0,0">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource FieldLabelStyle}" Margin="0" Text="Colors" />
+                                        <TextBlock Style="{StaticResource HintTextStyle}" Text="Adjust the main fence palette here, then use the live preview to fine-tune the feel." />
+                                        <Grid Margin="0,8,0,0">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="170" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Title bar background" VerticalAlignment="Center" />
+                                            <colorpicker:PortableColorPicker Grid.Row="0" Grid.Column="1" SelectedColor="{Binding HeaderColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" Margin="0,0,0,8" />
+
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Fence background" VerticalAlignment="Center" />
+                                            <colorpicker:PortableColorPicker Grid.Row="1" Grid.Column="1" SelectedColor="{Binding BodyColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" Margin="0,0,0,8" />
+
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Title text" VerticalAlignment="Center" />
+                                            <colorpicker:PortableColorPicker Grid.Row="2" Grid.Column="1" SelectedColor="{Binding TitleColor, Converter={StaticResource brushConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" Margin="0,0,0,8" />
+
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Shortcut text" VerticalAlignment="Center" />
+                                            <colorpicker:PortableColorPicker Grid.Row="3" Grid.Column="1" SelectedColor="{Binding LabelsColor, Converter={StaticResource brushConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" Margin="0,0,0,8" />
+
+                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Theme accent / glow" VerticalAlignment="Center" />
+                                            <colorpicker:PortableColorPicker Grid.Row="4" Grid.Column="1" SelectedColor="{Binding AccentColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="36" HorizontalAlignment="Left" Style="{StaticResource DefaultColorPickerStyle}" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Style="{StaticResource OptionCardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource FieldLabelStyle}" Margin="0" Text="Background art" />
+                                        <WrapPanel Margin="0,6,0,0">
+                                            <Button Style="{StaticResource ActionButtonStyle}" Content="Choose image..." Command="{Binding SelectBackgroundImageCommand}" />
+                                            <Button Style="{StaticResource ActionButtonStyle}" Content="Clear" Command="{Binding ClearBackgroundImageCommand}" MinWidth="84" />
+                                        </WrapPanel>
+                                        <TextBlock Style="{StaticResource HintTextStyle}" Text="{Binding BackgroundImageLabel}" />
+
+                                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Fence background opacity" />
+                                        <DockPanel Margin="0,6,0,0" LastChildFill="False">
+                                            <Slider Width="220"
+                                                    Minimum="0.05"
+                                                    Maximum="1"
+                                                    TickFrequency="0.05"
+                                                    Value="{Binding BackgroundImageOpacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    VerticalAlignment="Center" />
+                                            <Border Style="{StaticResource ValueChipStyle}">
+                                                <TextBlock Text="{Binding BackgroundImageOpacity, StringFormat={}{0:P0}}" FontWeight="SemiBold" />
+                                            </Border>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Style="{StaticResource OptionCardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource FieldLabelStyle}" Margin="0" Text="Frame art" />
+                                        <WrapPanel Margin="0,6,0,0">
+                                            <Button Style="{StaticResource ActionButtonStyle}" Content="Choose frame..." Command="{Binding SelectFrameOverlayCommand}" />
+                                            <Button Style="{StaticResource ActionButtonStyle}" Content="Clear" Command="{Binding ClearFrameOverlayCommand}" MinWidth="84" />
+                                        </WrapPanel>
+                                        <TextBlock Style="{StaticResource HintTextStyle}" Text="{Binding FrameOverlayLabel}" />
+                                        <TextBlock Margin="0,6,0,0" Style="{StaticResource HintTextStyle}" Text="PNG overlays with a transparent center work best for frame art like the example image." />
+
+                                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Theme frame opacity" />
+                                        <DockPanel Margin="0,6,0,0" LastChildFill="False">
+                                            <Slider Width="220"
+                                                    Minimum="0.05"
+                                                    Maximum="1"
+                                                    TickFrequency="0.05"
+                                                    Value="{Binding FrameOverlayOpacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    VerticalAlignment="Center" />
+                                            <Border Style="{StaticResource ValueChipStyle}">
+                                                <TextBlock Text="{Binding FrameOverlayOpacity, StringFormat={}{0:P0}}" FontWeight="SemiBold" />
+                                            </Border>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingsCardStyle}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Live Preview" />
+                                <TextBlock Text="This preview updates as you change colors, fonts, fence backgrounds, and frame overlays." Opacity="0.8" TextWrapping="Wrap" />
+
+                                <Border Margin="0,12,0,0"
+                                        Padding="0"
+                                        CornerRadius="16"
+                                        BorderBrush="{Binding AccentBrush}"
+                                        BorderThickness="2"
+                                        Background="#06000000">
+                                    <Grid ClipToBounds="True">
+                                        <StackPanel Margin="10">
+                                            <Border Height="{Binding HeaderHeight}"
+                                                    MinHeight="36"
+                                                    Padding="14,0"
+                                                    CornerRadius="10"
+                                                    Background="{Binding HeaderBrush}"
+                                                    BorderBrush="{Binding AccentBrush}"
+                                                    BorderThickness="1">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0"
+                                                               Text="{Binding Name}"
+                                                               FontFamily="{Binding TitleFontFamily}"
+                                                               Foreground="{Binding TitleColor}"
+                                                               FontSize="{Binding TitleFontSize}"
+                                                               FontWeight="SemiBold"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1"
+                                                            Width="22"
+                                                            Height="22"
+                                                            Margin="8,0,0,0"
+                                                            CornerRadius="6"
+                                                            Background="#33000000"
+                                                            BorderBrush="{Binding AccentBrush}"
+                                                            BorderThickness="1"
+                                                            VerticalAlignment="Center">
+                                                        <TextBlock Text="⌄"
+                                                                   Foreground="{Binding TitleColor}"
+                                                                   HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center"
+                                                                   TextAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
+
+                                            <Border Margin="0,10,0,0"
+                                                    MinHeight="220"
+                                                    CornerRadius="12"
+                                                    Background="{Binding BodyBrush}">
+                                                <Grid ClipToBounds="True">
+                                                    <Image Source="{Binding BackgroundImagePath, Converter={StaticResource PathToImage}}"
+                                                           Visibility="{Binding BackgroundImageVisibility}"
+                                                           Opacity="{Binding BackgroundImageOpacity}"
+                                                           Stretch="UniformToFill"
+                                                           IsHitTestVisible="False" />
+                                                    <StackPanel Margin="10">
+                                                        <Border Visibility="{Binding SearchVisibility}"
+                                                                Padding="8,4"
+                                                                CornerRadius="8"
+                                                                Background="#22000000"
+                                                                Margin="0,0,0,10">
+                                                            <DockPanel LastChildFill="True">
+                                                                <TextBlock DockPanel.Dock="Left"
+                                                                           Text="Search"
+                                                                           Margin="2,0,8,0"
+                                                                           FontWeight="SemiBold"
+                                                                           Foreground="{Binding TitleColor}" />
+                                                                <TextBlock DockPanel.Dock="Right"
+                                                                           Text="✕"
+                                                                           Foreground="{Binding TitleColor}"
+                                                                           Opacity="0.8" />
+                                                                <TextBlock Text="Search preview"
+                                                                           Foreground="{Binding LabelsColor}"
+                                                                           Opacity="0.8" />
+                                                            </DockPanel>
+                                                        </Border>
+                                                        <WrapPanel>
+                                                            <StackPanel Width="{Binding ShortcutTileWidth}" Margin="0,0,6,8">
+                                                                <Border Width="{Binding IconSize}" Height="{Binding IconSize}" CornerRadius="8" Background="#22000000" BorderBrush="{Binding AccentBrush}" BorderThickness="1" HorizontalAlignment="Center" />
+                                                                <TextBlock Margin="0,6,0,0" Text="Shortcut" MaxWidth="{Binding ShortcutTextMaxWidth}" TextTrimming="CharacterEllipsis" TextAlignment="Center" HorizontalAlignment="Center" Foreground="{Binding LabelsColor}" />
+                                                            </StackPanel>
+                                                            <StackPanel Width="{Binding ShortcutTileWidth}" Margin="0,0,6,8">
+                                                                <Border Width="{Binding IconSize}" Height="{Binding IconSize}" CornerRadius="8" Background="#22000000" BorderBrush="{Binding AccentBrush}" BorderThickness="1" HorizontalAlignment="Center" />
+                                                                <TextBlock Margin="0,6,0,0" Text="Folder" MaxWidth="{Binding ShortcutTextMaxWidth}" TextTrimming="CharacterEllipsis" TextAlignment="Center" HorizontalAlignment="Center" Foreground="{Binding LabelsColor}" />
+                                                            </StackPanel>
+                                                            <StackPanel Width="{Binding ShortcutTileWidth}" Margin="0,0,6,8">
+                                                                <Border Width="{Binding IconSize}" Height="{Binding IconSize}" CornerRadius="8" Background="#22000000" BorderBrush="{Binding AccentBrush}" BorderThickness="1" HorizontalAlignment="Center" />
+                                                                <TextBlock Margin="0,6,0,0" Text="Game" MaxWidth="{Binding ShortcutTextMaxWidth}" TextTrimming="CharacterEllipsis" TextAlignment="Center" HorizontalAlignment="Center" Foreground="{Binding LabelsColor}" />
+                                                            </StackPanel>
+                                                            <StackPanel Width="{Binding ShortcutTileWidth}" Margin="0,0,6,8">
+                                                                <Border Width="{Binding IconSize}" Height="{Binding IconSize}" CornerRadius="8" Background="#22000000" BorderBrush="{Binding AccentBrush}" BorderThickness="1" HorizontalAlignment="Center" />
+                                                                <TextBlock Margin="0,6,0,0" Text="Tool" MaxWidth="{Binding ShortcutTextMaxWidth}" TextTrimming="CharacterEllipsis" TextAlignment="Center" HorizontalAlignment="Center" Foreground="{Binding LabelsColor}" />
+                                                            </StackPanel>
+                                                        </WrapPanel>
+                                                        <WrapPanel Margin="0,10,0,0">
+                                                            <TextBlock Text="{Binding BackgroundImageLabel, StringFormat=Background: {0}}"
+                                                                       TextWrapping="Wrap"
+                                                                       Foreground="{Binding LabelsColor}" />
+                                                            <TextBlock Margin="12,0,0,0"
+                                                                       Text="{Binding FrameOverlayLabel, StringFormat=Overlay: {0}}"
+                                                                       TextWrapping="Wrap"
+                                                                       Foreground="{Binding LabelsColor}" />
+                                                        </WrapPanel>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <Image Source="{Binding FrameOverlayPath, Converter={StaticResource PathToImage}}"
+                                               Visibility="{Binding FrameOverlayVisibility}"
+                                               Opacity="{Binding FrameOverlayOpacity}"
+                                               Stretch="Fill"
+                                               IsHitTestVisible="False" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⚙" Margin="0,0,6,0" />
+                        <TextBlock Text="Behavior" />
+                    </StackPanel>
+                </TabItem.Header>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="10">
+                    <Border Style="{StaticResource SettingsCardStyle}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Behavior" />
+                            <TextBlock Style="{StaticResource HintTextStyle}"
+                                       Text="These options control how the fence behaves on your desktop without affecting the rest of your layout." />
+
+                            <Border Style="{StaticResource OptionCardStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="🔒" FontSize="20" Margin="0,0,12,0" VerticalAlignment="Top" />
+                                    <StackPanel Grid.Column="1">
+                                        <CheckBox Content="Lock this fence layout"
+                                                  IsChecked="{Binding IsLayoutLocked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Margin="0" />
+                                        <TextBlock Style="{StaticResource HintTextStyle}" Text="{Binding LayoutLockDescription}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource OptionCardStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="🔎" FontSize="20" Margin="0,0,12,0" VerticalAlignment="Top" />
+                                    <StackPanel Grid.Column="1">
+                                        <CheckBox Content="Show search bar in this fence"
+                                                  IsChecked="{Binding IsSearchEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Margin="0" />
+                                        <TextBlock Style="{StaticResource HintTextStyle}"
+                                                   Text="Turn this off if you want a cleaner fence with no search box at the top." />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource OptionCardStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="🗔" FontSize="20" Margin="0,0,12,0" VerticalAlignment="Top" />
+                                    <StackPanel Grid.Column="1">
+                                        <CheckBox Content="Show this fence in Alt+Tab"
+                                                  IsChecked="{Binding ShowInAltTab, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Margin="0" />
+                                        <TextBlock Style="{StaticResource HintTextStyle}" Text="{Binding AltTabVisibilityDescription}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+        <Border Grid.Row="2"
+                Padding="14,10"
+                Background="#12000000"
+                BorderBrush="#1FFFFFFF"
+                BorderThickness="0,1,0,0">
             <DockPanel LastChildFill="False">
-                <Slider Width="210" Minimum="36" Maximum="120" TickFrequency="4" IsSnapToTickEnabled="True" Value="{Binding HeaderHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" />
-                <TextBox Width="60" Margin="10,0,0,0" Text="{Binding HeaderHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" />
+                <TextBlock Style="{StaticResource HintTextStyle}"
+                           VerticalAlignment="Center"
+                           Text="Changes save instantly while you edit this fence. Press Esc or use Done when you're finished." />
+                <Button DockPanel.Dock="Right"
+                        Style="{StaticResource ActionButtonStyle}"
+                        Content="Done"
+                        ToolTip="Close settings"
+                        IsCancel="True"
+                        Padding="18,6"
+                        Margin="12,0,0,0" />
             </DockPanel>
-            <TextBlock Margin="0,6,0,0" HorizontalAlignment="Center" Text="{Binding HeaderHeight, StringFormat={}Current height: {0}px}" />
-        </StackPanel>
-
-        <Label Grid.Row="12" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Icon Size</Label>
-        <StackPanel Grid.Row="12" Grid.Column="2" HorizontalAlignment="Stretch">
-            <DockPanel LastChildFill="False">
-                <Slider Width="210" Minimum="32" Maximum="96" TickFrequency="4" IsSnapToTickEnabled="True" Value="{Binding IconSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" />
-                <TextBox Width="60" Margin="10,0,0,0" Text="{Binding IconSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" />
-            </DockPanel>
-            <TextBlock Margin="0,6,0,0" HorizontalAlignment="Center" Text="{Binding IconSize, StringFormat={}Current icon size: {0}px}" />
-        </StackPanel>
-
-        <Label Grid.Row="14" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Layout</Label>
-        <StackPanel Grid.Row="14" Grid.Column="2" HorizontalAlignment="Stretch">
-            <CheckBox Content="Lock this fence layout" IsChecked="{Binding IsLayoutLocked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,0" />
-            <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Opacity="0.8" Text="{Binding LayoutLockDescription}" />
-        </StackPanel>
-
-        <Label Grid.Row="16" Style="{StaticResource MaterialDesignLabel}" FontSize="24">Startup</Label>
-        <StackPanel Grid.Row="16" Grid.Column="2" HorizontalAlignment="Stretch">
-            <CheckBox Content="{Binding StartupSettingLabel}" IsChecked="{Binding StartWithWindows, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,0" />
-            <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Opacity="0.8" Text="You can turn this on or off at any time. It applies to the app globally, not just this fence." />
-        </StackPanel>
-
+        </Border>
     </Grid>
 </Window>

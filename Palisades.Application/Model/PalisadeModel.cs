@@ -45,6 +45,15 @@ namespace Palisades.Model
         private int iconSize;
         private bool isCollapsed;
         private bool isLayoutLocked;
+        private bool isSearchEnabled;
+        private bool showInAltTab;
+        private string themePreset;
+        private string titleFontFamilyName;
+        private string backgroundImagePath;
+        private double backgroundImageOpacity;
+        private string frameOverlayPath;
+        private double frameOverlayOpacity;
+        private Color accentColor;
         private ObservableCollection<Shortcut> shortcuts;
         private ObservableCollection<PalisadeGroupState> groupStates;
         private ObservableCollection<string> types;
@@ -65,12 +74,21 @@ namespace Palisades.Model
             bodyColor = Color.FromArgb(120, 0, 0, 0);
             titleColor = Color.FromArgb(255, 255, 255, 255);
             labelsColor = Color.FromArgb(255, 255, 255, 255);
+            accentColor = Color.FromArgb(255, 96, 229, 255);
             width = 800;
             height = DefaultFenceHeight;
             headerHeight = DefaultHeaderHeight;
             iconSize = DefaultIconSize;
             isCollapsed = false;
             isLayoutLocked = false;
+            isSearchEnabled = true;
+            showInAltTab = false;
+            themePreset = "Midnight";
+            titleFontFamilyName = "Segoe UI";
+            backgroundImagePath = string.Empty;
+            backgroundImageOpacity = 0.22d;
+            frameOverlayPath = string.Empty;
+            frameOverlayOpacity = 0.9d;
             shortcuts = new();
             groupStates = new();
             types = new();
@@ -100,11 +118,24 @@ namespace Palisades.Model
         }
         public bool IsCollapsed { get { return isCollapsed; } set { isCollapsed = value; } }
         public bool IsLayoutLocked { get { return isLayoutLocked; } set { isLayoutLocked = value; } }
+        public bool IsSearchEnabled { get { return isSearchEnabled; } set { isSearchEnabled = value; } }
+        public bool ShowInAltTab { get { return showInAltTab; } set { showInAltTab = value; } }
+        public string ThemePreset { get { return string.IsNullOrWhiteSpace(themePreset) ? "Midnight" : themePreset; } set { themePreset = string.IsNullOrWhiteSpace(value) ? "Midnight" : value.Trim(); } }
+        public string TitleFontFamilyName { get { return string.IsNullOrWhiteSpace(titleFontFamilyName) ? "Segoe UI" : titleFontFamilyName; } set { titleFontFamilyName = string.IsNullOrWhiteSpace(value) ? "Segoe UI" : value.Trim(); } }
+        public string BackgroundImagePath { get { return backgroundImagePath ?? string.Empty; } set { backgroundImagePath = value?.Trim() ?? string.Empty; } }
+        public double BackgroundImageOpacity { get { return backgroundImageOpacity < 0.05d ? 0.22d : Math.Clamp(backgroundImageOpacity, 0.05d, 1d); } set { backgroundImageOpacity = Math.Clamp(value, 0.05d, 1d); } }
+        public string FrameOverlayPath { get { return frameOverlayPath ?? string.Empty; } set { frameOverlayPath = value?.Trim() ?? string.Empty; } }
+        public double FrameOverlayOpacity { get { return frameOverlayOpacity < 0.05d ? 0.9d : Math.Clamp(frameOverlayOpacity, 0.05d, 1d); } set { frameOverlayOpacity = Math.Clamp(value, 0.05d, 1d); } }
 
         public Color HeaderColor { get { return headerColor; } set { headerColor = value; } }
         public Color BodyColor { get { return bodyColor; } set { bodyColor = value; } }
         public Color TitleColor { get { return titleColor; } set { titleColor = value; } }
         public Color LabelsColor { get { return labelsColor; } set { labelsColor = value; } }
+        public Color AccentColor
+        {
+            get { return accentColor.A == 0 && accentColor.R == 0 && accentColor.G == 0 && accentColor.B == 0 ? Color.FromArgb(255, 96, 229, 255) : accentColor; }
+            set { accentColor = value; }
+        }
 
         [XmlArrayItem(typeof(LnkShortcut))]
         [XmlArrayItem(typeof(UrlShortcut))]
@@ -128,6 +159,13 @@ namespace Palisades.Model
             groupStates ??= new();
             types ??= new();
             visibleDesktopIds ??= new();
+            themePreset = ThemePreset;
+            titleFontFamilyName = TitleFontFamilyName;
+            backgroundImagePath = BackgroundImagePath;
+            backgroundImageOpacity = BackgroundImageOpacity;
+            frameOverlayPath = FrameOverlayPath;
+            frameOverlayOpacity = FrameOverlayOpacity;
+            accentColor = AccentColor;
 
             foreach (Shortcut shortcut in shortcuts)
             {

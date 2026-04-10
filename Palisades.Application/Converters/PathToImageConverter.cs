@@ -10,20 +10,26 @@ namespace Palisades.Converters
     {
         public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is not string path)
+            if (value is not string path || string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             {
                 return null;
             }
 
-            BitmapImage image = new();
-            using (FileStream stream = File.OpenRead(path))
+            try
             {
+                BitmapImage image = new();
+                using FileStream stream = File.OpenRead(path);
                 image.BeginInit();
                 image.StreamSource = stream;
                 image.CacheOption = BitmapCacheOption.OnLoad;
                 image.EndInit();
+                image.Freeze();
+                return image;
             }
-            return image;
+            catch
+            {
+                return null;
+            }
         }
         public object ConvertBack(object value, Type targetType,
                                   object parameter, CultureInfo culture)

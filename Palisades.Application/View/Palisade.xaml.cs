@@ -1,7 +1,9 @@
 ﻿using Palisades.Model;
 using Palisades.ViewModel;
 using System;
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -14,6 +16,14 @@ namespace Palisades.View
     public partial class Palisade : Window
     {
         private const string TabDragDataFormat = "Palisades.TabIdentifier";
+        private const int GWL_EXSTYLE = -20;
+        private const int WS_EX_TOOLWINDOW = 0x00000080;
+        private const int WS_EX_APPWINDOW = 0x00040000;
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_NOZORDER = 0x0004;
+        private const uint SWP_NOACTIVATE = 0x0010;
+        private const uint SWP_FRAMECHANGED = 0x0020;
 
         private readonly PalisadeViewModel viewModel;
         private Point? tabDragStartPoint;
@@ -24,8 +34,59 @@ namespace Palisades.View
             InitializeComponent();
             DataContext = defaultModel;
             viewModel = defaultModel;
+            viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            SourceInitialized += Palisade_SourceInitialized;
+            Closed += Palisade_Closed;
             TrySetWindowIcon();
             Show();
+        }
+
+        [DllImport("user32.dll", EntryPoint = "GetWindowLong")]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll", EntryPoint = "SetWindowLong")]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
+
+        private void Palisade_SourceInitialized(object? sender, EventArgs e)
+        {
+            ApplyAltTabVisibility();
+        }
+
+        private void Palisade_Closed(object? sender, EventArgs e)
+        {
+            viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            SourceInitialized -= Palisade_SourceInitialized;
+            Closed -= Palisade_Closed;
+        }
+
+        private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(e.PropertyName) || e.PropertyName == nameof(PalisadeViewModel.ShowInAltTab))
+            {
+                ApplyAltTabVisibility();
+            }
+        }
+
+        private void ApplyAltTabVisibility()
+        {
+            IntPtr handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            if (handle == IntPtr.Zero)
+            {
+                return;
+            }
+
+            int extendedStyle = GetWindowLong(handle, GWL_EXSTYLE);
+            extendedStyle = viewModel.ShowInAltTab
+                ? (extendedStyle | WS_EX_APPWINDOW) & ~WS_EX_TOOLWINDOW
+                : (extendedStyle | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW;
+
+            SetWindowLong(handle, GWL_EXSTYLE, extendedStyle);
+            SetWindowPos(handle, IntPtr.Zero, 0, 0, 0, 0,
+                SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
         }
 
         private void TrySetWindowIcon()

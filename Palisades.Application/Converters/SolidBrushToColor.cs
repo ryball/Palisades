@@ -9,8 +9,12 @@ namespace Palisades.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            SolidColorBrush colorBrush = (SolidColorBrush)value;
-            return colorBrush.Color;
+            return value switch
+            {
+                SolidColorBrush colorBrush => colorBrush.Color,
+                Color color => color,
+                _ => Colors.White
+            };
         }
 
         public object? ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -19,7 +23,13 @@ namespace Palisades.Converters
             {
                 return new SolidColorBrush(color);
             }
-            return null;
+
+            if (value is SolidColorBrush brush)
+            {
+                return brush;
+            }
+
+            return new SolidColorBrush(Colors.White);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using GongSolutions.Wpf.DragDrop;
 using Microsoft.VisualBasic;
+using Microsoft.Win32;
 using Palisades.Helpers;
 using Palisades.Model;
 using Palisades.View;
@@ -20,6 +21,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Xml.Serialization;
+using Forms = System.Windows.Forms;
 
 namespace Palisades.ViewModel
 {
@@ -27,6 +29,19 @@ namespace Palisades.ViewModel
     {
         #region Attributs
         private const string ShortcutDragDataFormat = "Palisades.ShortcutDrag";
+        private const string CustomThemePresetName = "Custom";
+        private const string DefaultThemePresetName = "Midnight";
+        private const string DefaultTitleFontFamilyName = "Segoe UI";
+        private static readonly string[] ThemePresetOrder = new[] { "Galactic", DefaultThemePresetName, "Aurora", "Forest", "Sunset", "Paper" };
+        private static readonly IReadOnlyDictionary<string, (Color Header, Color Body, Color Title, Color Labels, Color Accent)> ThemePresets = new Dictionary<string, (Color Header, Color Body, Color Title, Color Labels, Color Accent)>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Galactic"] = (Color.FromArgb(220, 7, 31, 58), Color.FromArgb(150, 3, 11, 28), Color.FromArgb(255, 226, 249, 255), Color.FromArgb(255, 214, 236, 255), Color.FromArgb(255, 96, 229, 255)),
+            [DefaultThemePresetName] = (Color.FromArgb(210, 12, 18, 28), Color.FromArgb(135, 7, 11, 18), Colors.White, Colors.White, Color.FromArgb(255, 134, 195, 255)),
+            ["Aurora"] = (Color.FromArgb(220, 34, 56, 89), Color.FromArgb(150, 13, 31, 50), Color.FromArgb(255, 228, 248, 255), Color.FromArgb(255, 216, 240, 255), Color.FromArgb(255, 96, 238, 223)),
+            ["Forest"] = (Color.FromArgb(220, 28, 68, 52), Color.FromArgb(145, 18, 42, 32), Color.FromArgb(255, 237, 250, 241), Color.FromArgb(255, 221, 242, 228), Color.FromArgb(255, 120, 235, 173)),
+            ["Sunset"] = (Color.FromArgb(220, 111, 46, 52), Color.FromArgb(145, 64, 24, 34), Color.FromArgb(255, 255, 242, 236), Color.FromArgb(255, 255, 228, 214), Color.FromArgb(255, 255, 176, 110)),
+            ["Paper"] = (Color.FromArgb(235, 245, 245, 245), Color.FromArgb(205, 255, 255, 255), Color.FromArgb(255, 44, 44, 44), Color.FromArgb(255, 58, 58, 58), Color.FromArgb(255, 74, 145, 216))
+        };
 
         private readonly DefaultDropHandler defaultDropHandler = new();
         private readonly DefaultDragHandler defaultDragHandler = new();
@@ -36,9 +51,26 @@ namespace Palisades.ViewModel
         private volatile bool shouldSave;
         private readonly ObservableCollection<Shortcut> selectedShortcuts = new();
         private readonly List<(Shortcut Shortcut, int Index)> lastRemovedShortcuts = new();
+        private readonly Stack<ShortcutHistorySnapshot> undoShortcutHistory = new();
+        private readonly Stack<ShortcutHistorySnapshot> redoShortcutHistory = new();
         private string searchQuery = string.Empty;
         private Shortcut? selectedShortcut;
         private bool isHiddenByUser;
+        private bool isApplyingThemePreset;
+
+        private sealed class ShortcutHistorySnapshot
+        {
+            public ShortcutHistorySnapshot(string serializedModel, IReadOnlyList<int> selectedIndices, int primaryIndex)
+            {
+                SerializedModel = serializedModel;
+                SelectedIndices = selectedIndices.ToList();
+                PrimaryIndex = primaryIndex;
+            }
+
+            public string SerializedModel { get; }
+            public List<int> SelectedIndices { get; }
+            public int PrimaryIndex { get; }
+        }
         #endregion
 
         #region Accessors
@@ -262,7 +294,263 @@ namespace Palisades.ViewModel
 
         public bool HasActiveSearch
         {
-            get { return !string.IsNullOrWhiteSpace(SearchQuery); }
+            get { return IsSearchEnabled && !string.IsNullOrWhiteSpace(SearchQuery); }
+        }
+
+        public bool IsSearchEnabled
+        {
+            get { return model.IsSearchEnabled; }
+            set
+            {
+                if (model.IsSearchEnabled == value)
+                {
+                    return;
+                }
+
+                model.IsSearchEnabled = value;
+                if (!value && !string.IsNullOrWhiteSpace(searchQuery))
+                {
+                    searchQuery = string.Empty;
+                    OnPropertyChanged(nameof(SearchQuery));
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SearchVisibility));
+                OnPropertyChanged(nameof(HasActiveSearch));
+                groupedShortcuts?.Refresh();
+                CommandManager.InvalidateRequerySuggested();
+                Save();
+            }
+        }
+
+        public Visibility SearchVisibility
+        {
+            get { return IsSearchEnabled ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public IEnumerable<string> AvailableThemePresets
+        {
+            get { return new[] { CustomThemePresetName }.Concat(ThemePresetOrder).ToList(); }
+        }
+
+        public IEnumerable<string> AvailableTitleFonts
+        {
+            get { return Fonts.SystemFontFamilies.Select(font => font.Source).OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase).ToList(); }
+        }
+
+        public string SelectedThemePreset
+        {
+            get { return NormalizeThemePreset(model.ThemePreset); }
+            set
+            {
+                string normalized = NormalizeThemePreset(value);
+                if (string.Equals(model.ThemePreset, normalized, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                model.ThemePreset = normalized;
+                OnPropertyChanged();
+                if (!string.Equals(normalized, CustomThemePresetName, StringComparison.OrdinalIgnoreCase))
+                {
+                    ApplyThemePreset(normalized);
+                }
+                Save();
+            }
+        }
+
+        public FontFamily TitleFontFamily
+        {
+            get
+            {
+                string fontName = string.IsNullOrWhiteSpace(model.TitleFontFamilyName) ? DefaultTitleFontFamilyName : model.TitleFontFamilyName;
+                try
+                {
+                    return new FontFamily(fontName);
+                }
+                catch
+                {
+                    return new FontFamily(DefaultTitleFontFamilyName);
+                }
+            }
+        }
+
+        public string SelectedTitleFontName
+        {
+            get { return string.IsNullOrWhiteSpace(model.TitleFontFamilyName) ? DefaultTitleFontFamilyName : model.TitleFontFamilyName; }
+            set
+            {
+                string normalized = string.IsNullOrWhiteSpace(value) ? DefaultTitleFontFamilyName : value.Trim();
+                if (string.Equals(model.TitleFontFamilyName, normalized, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                model.TitleFontFamilyName = normalized;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(TitleFontFamily));
+                MarkThemePresetAsCustom();
+                Save();
+            }
+        }
+
+        public string BackgroundImagePath
+        {
+            get { return model.BackgroundImagePath; }
+            set
+            {
+                string normalized = value?.Trim() ?? string.Empty;
+                if (string.Equals(model.BackgroundImagePath, normalized, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                model.BackgroundImagePath = normalized;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasBackgroundImage));
+                OnPropertyChanged(nameof(BackgroundImageLabel));
+                OnPropertyChanged(nameof(BackgroundImageVisibility));
+                MarkThemePresetAsCustom();
+                Save();
+            }
+        }
+
+        public string BackgroundImageLabel
+        {
+            get { return HasBackgroundImage ? Path.GetFileName(model.BackgroundImagePath) : "No fence background image selected."; }
+        }
+
+        public string FrameOverlayPath
+        {
+            get { return model.FrameOverlayPath; }
+            set
+            {
+                string normalized = value?.Trim() ?? string.Empty;
+                if (string.Equals(model.FrameOverlayPath, normalized, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                model.FrameOverlayPath = normalized;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasFrameOverlay));
+                OnPropertyChanged(nameof(FrameOverlayLabel));
+                OnPropertyChanged(nameof(FrameOverlayVisibility));
+                CommandManager.InvalidateRequerySuggested();
+                MarkThemePresetAsCustom();
+                Save();
+            }
+        }
+
+        public string FrameOverlayLabel
+        {
+            get { return HasFrameOverlay ? Path.GetFileName(model.FrameOverlayPath) : "No theme frame overlay selected."; }
+        }
+
+        public bool HasFrameOverlay
+        {
+            get { return !string.IsNullOrWhiteSpace(model.FrameOverlayPath) && File.Exists(model.FrameOverlayPath); }
+        }
+
+        public Visibility FrameOverlayVisibility
+        {
+            get { return HasFrameOverlay ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public bool HasBackgroundImage
+        {
+            get { return !string.IsNullOrWhiteSpace(model.BackgroundImagePath) && File.Exists(model.BackgroundImagePath); }
+        }
+
+        public Visibility BackgroundImageVisibility
+        {
+            get { return HasBackgroundImage ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public double BackgroundImageOpacity
+        {
+            get { return model.BackgroundImageOpacity; }
+            set
+            {
+                double normalized = Math.Clamp(value, 0.05d, 1d);
+                if (Math.Abs(model.BackgroundImageOpacity - normalized) < 0.001d)
+                {
+                    return;
+                }
+
+                model.BackgroundImageOpacity = normalized;
+                OnPropertyChanged();
+                MarkThemePresetAsCustom();
+                Save();
+            }
+        }
+
+        public double FrameOverlayOpacity
+        {
+            get { return model.FrameOverlayOpacity; }
+            set
+            {
+                double normalized = Math.Clamp(value, 0.05d, 1d);
+                if (Math.Abs(model.FrameOverlayOpacity - normalized) < 0.001d)
+                {
+                    return;
+                }
+
+                model.FrameOverlayOpacity = normalized;
+                OnPropertyChanged();
+                MarkThemePresetAsCustom();
+                Save();
+            }
+        }
+
+        public Color AccentColor
+        {
+            get { return model.AccentColor; }
+            set
+            {
+                if (model.AccentColor == value)
+                {
+                    return;
+                }
+
+                model.AccentColor = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(AccentBrush));
+                MarkThemePresetAsCustom();
+                Save();
+            }
+        }
+
+        public SolidColorBrush AccentBrush
+        {
+            get => new(model.AccentColor);
+        }
+
+        public bool ShowInAltTab
+        {
+            get { return model.ShowInAltTab; }
+            set
+            {
+                if (model.ShowInAltTab == value)
+                {
+                    return;
+                }
+
+                model.ShowInAltTab = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(AltTabVisibilityDescription));
+                Save();
+            }
+        }
+
+        public string AltTabVisibilityDescription
+        {
+            get
+            {
+                return ShowInAltTab
+                    ? "This fence will appear when you switch windows with Alt+Tab."
+                    : "This fence stays out of Alt+Tab so it behaves more like part of the desktop.";
+            }
         }
 
         public bool IsLayoutLocked
@@ -390,24 +678,82 @@ namespace Palisades.ViewModel
         public Color HeaderColor
         {
             get { return model.HeaderColor; }
-            set { model.HeaderColor = value; OnPropertyChanged(); Save(); }
+            set
+            {
+                if (model.HeaderColor == value)
+                {
+                    return;
+                }
+
+                model.HeaderColor = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HeaderBrush));
+                MarkThemePresetAsCustom();
+                Save();
+            }
+        }
+
+        public SolidColorBrush HeaderBrush
+        {
+            get => new(model.HeaderColor);
         }
 
         public Color BodyColor
         {
             get { return model.BodyColor; }
-            set { model.BodyColor = value; OnPropertyChanged(); Save(); }
+            set
+            {
+                if (model.BodyColor == value)
+                {
+                    return;
+                }
+
+                model.BodyColor = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(BodyBrush));
+                MarkThemePresetAsCustom();
+                Save();
+            }
+        }
+
+        public SolidColorBrush BodyBrush
+        {
+            get => new(model.BodyColor);
         }
 
         public SolidColorBrush TitleColor
         {
             get => new(model.TitleColor);
-            set { model.TitleColor = value.Color; OnPropertyChanged(); Save(); }
+            set
+            {
+                Color color = value?.Color ?? Colors.White;
+                if (model.TitleColor == color)
+                {
+                    return;
+                }
+
+                model.TitleColor = color;
+                OnPropertyChanged();
+                MarkThemePresetAsCustom();
+                Save();
+            }
         }
         public SolidColorBrush LabelsColor
         {
             get => new(model.LabelsColor);
-            set { model.LabelsColor = value.Color; OnPropertyChanged(); Save(); }
+            set
+            {
+                Color color = value?.Color ?? Colors.White;
+                if (model.LabelsColor == color)
+                {
+                    return;
+                }
+
+                model.LabelsColor = color;
+                OnPropertyChanged();
+                MarkThemePresetAsCustom();
+                Save();
+            }
         }
 
         public ObservableCollection<Shortcut> Shortcuts
@@ -500,7 +846,12 @@ namespace Palisades.ViewModel
 
         public bool CanUndoShortcutRemoval
         {
-            get { return lastRemovedShortcuts.Count > 0; }
+            get { return undoShortcutHistory.Count > 0 || lastRemovedShortcuts.Count > 0; }
+        }
+
+        public bool CanRedoShortcutHistory
+        {
+            get { return redoShortcutHistory.Count > 0; }
         }
 
         public string SelectedShortcutGroupName
@@ -725,7 +1076,14 @@ namespace Palisades.ViewModel
                 return;
             }
 
-            SelectedShortcutGroupName = NormalizeGroupName(groupName);
+            string normalized = NormalizeGroupName(groupName);
+            if (GetSelectedShortcutSnapshot().All(shortcut => string.Equals(shortcut.GroupName, normalized, StringComparison.Ordinal)))
+            {
+                return;
+            }
+
+            RecordShortcutHistorySnapshot();
+            SelectedShortcutGroupName = normalized;
         }
 
         public void MoveSelectedShortcutToType(string? typeName)
@@ -736,7 +1094,16 @@ namespace Palisades.ViewModel
             }
 
             string normalized = NormalizeTypeName(typeName);
-            foreach (Shortcut shortcut in GetSelectedShortcutSnapshot())
+            List<Shortcut> targets = GetSelectedShortcutSnapshot()
+                .Where(shortcut => !string.Equals(shortcut.TypeName, normalized, StringComparison.Ordinal))
+                .ToList();
+            if (targets.Count == 0)
+            {
+                return;
+            }
+
+            RecordShortcutHistorySnapshot();
+            foreach (Shortcut shortcut in targets)
             {
                 shortcut.TypeName = normalized;
             }
@@ -772,11 +1139,12 @@ namespace Palisades.ViewModel
 
         private void ApplyShortcutOrder(IList<Shortcut> orderedShortcuts)
         {
-            if (orderedShortcuts.Count != Shortcuts.Count)
+            if (orderedShortcuts.Count != Shortcuts.Count || orderedShortcuts.SequenceEqual(Shortcuts))
             {
                 return;
             }
 
+            RecordShortcutHistorySnapshot();
             Shortcut? currentSelection = SelectedShortcut;
             for (int targetIndex = 0; targetIndex < orderedShortcuts.Count; targetIndex++)
             {
@@ -812,7 +1180,7 @@ namespace Palisades.ViewModel
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(SearchQuery))
+            if (!IsSearchEnabled || string.IsNullOrWhiteSpace(SearchQuery))
             {
                 return true;
             }
@@ -828,6 +1196,152 @@ namespace Palisades.ViewModel
         {
             return !string.IsNullOrWhiteSpace(value)
                 && value.IndexOf(search, StringComparison.CurrentCultureIgnoreCase) >= 0;
+        }
+
+        private static string NormalizeThemePreset(string? themePreset)
+        {
+            if (string.IsNullOrWhiteSpace(themePreset))
+            {
+                return DefaultThemePresetName;
+            }
+
+            string normalized = themePreset.Trim();
+            if (string.Equals(normalized, CustomThemePresetName, StringComparison.OrdinalIgnoreCase))
+            {
+                return CustomThemePresetName;
+            }
+
+            return ThemePresets.ContainsKey(normalized) ? normalized : DefaultThemePresetName;
+        }
+
+        private void ApplyThemePreset(string themePreset)
+        {
+            string normalized = NormalizeThemePreset(themePreset);
+            if (!ThemePresets.TryGetValue(normalized, out (Color Header, Color Body, Color Title, Color Labels, Color Accent) palette))
+            {
+                return;
+            }
+
+            isApplyingThemePreset = true;
+            try
+            {
+                model.ThemePreset = normalized;
+                model.HeaderColor = palette.Header;
+                model.BodyColor = palette.Body;
+                model.TitleColor = palette.Title;
+                model.LabelsColor = palette.Labels;
+                model.AccentColor = palette.Accent;
+            }
+            finally
+            {
+                isApplyingThemePreset = false;
+            }
+
+            OnPropertyChanged(nameof(SelectedThemePreset));
+            OnPropertyChanged(nameof(HeaderColor));
+            OnPropertyChanged(nameof(BodyColor));
+            OnPropertyChanged(nameof(TitleColor));
+            OnPropertyChanged(nameof(LabelsColor));
+            OnPropertyChanged(nameof(AccentColor));
+            OnPropertyChanged(nameof(AccentBrush));
+        }
+
+        private void MarkThemePresetAsCustom()
+        {
+            if (isApplyingThemePreset || string.Equals(model.ThemePreset, CustomThemePresetName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            model.ThemePreset = CustomThemePresetName;
+            OnPropertyChanged(nameof(SelectedThemePreset));
+        }
+
+        private void ChooseThemeColor(string? colorTarget)
+        {
+            Color currentColor = colorTarget switch
+            {
+                "Header" => HeaderColor,
+                "Body" => BodyColor,
+                "Title" => TitleColor.Color,
+                "Labels" => LabelsColor.Color,
+                "Accent" => AccentColor,
+                _ => Colors.White
+            };
+
+            Forms.ColorDialog dialog = new()
+            {
+                AllowFullOpen = true,
+                FullOpen = true,
+                Color = System.Drawing.Color.FromArgb(currentColor.A, currentColor.R, currentColor.G, currentColor.B)
+            };
+
+            if (dialog.ShowDialog() != Forms.DialogResult.OK)
+            {
+                return;
+            }
+
+            Color selected = Color.FromArgb(currentColor.A, dialog.Color.R, dialog.Color.G, dialog.Color.B);
+            switch (colorTarget)
+            {
+                case "Header":
+                    HeaderColor = selected;
+                    break;
+                case "Body":
+                    BodyColor = selected;
+                    break;
+                case "Title":
+                    TitleColor = new SolidColorBrush(Color.FromArgb(255, dialog.Color.R, dialog.Color.G, dialog.Color.B));
+                    break;
+                case "Labels":
+                    LabelsColor = new SolidColorBrush(Color.FromArgb(255, dialog.Color.R, dialog.Color.G, dialog.Color.B));
+                    break;
+                case "Accent":
+                    AccentColor = Color.FromArgb(255, dialog.Color.R, dialog.Color.G, dialog.Color.B);
+                    break;
+            }
+        }
+
+        private void SelectBackgroundImage()
+        {
+            OpenFileDialog dialog = new()
+            {
+                Title = "Choose fence background image",
+                Filter = "Image files|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp|All files|*.*",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                BackgroundImagePath = dialog.FileName;
+            }
+        }
+
+        private void ClearBackgroundImage()
+        {
+            BackgroundImagePath = string.Empty;
+        }
+
+        private void SelectFrameOverlay()
+        {
+            OpenFileDialog dialog = new()
+            {
+                Title = "Choose theme frame overlay image",
+                Filter = "PNG files|*.png|Image files|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp|All files|*.*",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                FrameOverlayPath = dialog.FileName;
+            }
+        }
+
+        private void ClearFrameOverlay()
+        {
+            FrameOverlayPath = string.Empty;
         }
 
         private void SubscribeToShortcuts(ObservableCollection<Shortcut> shortcuts)
@@ -963,6 +1477,69 @@ namespace Palisades.ViewModel
                 ? primaryShortcut
                 : selectedShortcuts.LastOrDefault();
             SelectedShortcut = resolvedPrimary;
+        }
+
+        private void RecordShortcutHistorySnapshot()
+        {
+            undoShortcutHistory.Push(CaptureShortcutHistorySnapshot());
+            redoShortcutHistory.Clear();
+            lastRemovedShortcuts.Clear();
+            OnPropertyChanged(nameof(CanUndoShortcutRemoval));
+            OnPropertyChanged(nameof(CanRedoShortcutHistory));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private ShortcutHistorySnapshot CaptureShortcutHistorySnapshot()
+        {
+            using StringWriter writer = new();
+            XmlSerializer serializer = new(typeof(PalisadeModel), new Type[] { typeof(Shortcut), typeof(LnkShortcut), typeof(UrlShortcut) });
+            serializer.Serialize(writer, model);
+
+            List<int> selectedIndices = GetSelectedShortcutSnapshot()
+                .Select(shortcut => Shortcuts.IndexOf(shortcut))
+                .Where(index => index >= 0)
+                .Distinct()
+                .OrderBy(index => index)
+                .ToList();
+
+            int primaryIndex = SelectedShortcut != null ? Shortcuts.IndexOf(SelectedShortcut) : -1;
+            return new ShortcutHistorySnapshot(writer.ToString(), selectedIndices, primaryIndex);
+        }
+
+        private void RestoreShortcutHistorySnapshot(ShortcutHistorySnapshot snapshot)
+        {
+            using StringReader reader = new(snapshot.SerializedModel);
+            XmlSerializer serializer = new(typeof(PalisadeModel), new Type[] { typeof(Shortcut), typeof(LnkShortcut), typeof(UrlShortcut) });
+            if (serializer.Deserialize(reader) is not PalisadeModel restoredModel)
+            {
+                return;
+            }
+
+            restoredModel.EnsureDefaults();
+            model.GroupStates = new ObservableCollection<PalisadeGroupState>(
+                restoredModel.GroupStates.Select(state => new PalisadeGroupState
+                {
+                    GroupName = state.GroupName,
+                    IsExpanded = state.IsExpanded
+                }));
+            model.Types = new ObservableCollection<string>(restoredModel.Types);
+            Shortcuts = new ObservableCollection<Shortcut>(restoredModel.Shortcuts ?? new ObservableCollection<Shortcut>());
+
+            List<Shortcut> restoredSelection = snapshot.SelectedIndices
+                .Where(index => index >= 0 && index < Shortcuts.Count)
+                .Select(index => Shortcuts[index])
+                .ToList();
+            Shortcut? primaryShortcut = snapshot.PrimaryIndex >= 0 && snapshot.PrimaryIndex < Shortcuts.Count
+                ? Shortcuts[snapshot.PrimaryIndex]
+                : restoredSelection.LastOrDefault();
+            ApplyShortcutSelection(restoredSelection, primaryShortcut);
+
+            RefreshGroups();
+            Save();
+            OnPropertyChanged(nameof(AvailableTypes));
+            OnPropertyChanged(nameof(CanUndoShortcutRemoval));
+            OnPropertyChanged(nameof(CanRedoShortcutHistory));
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private void RegisterType(string? typeName)
@@ -1919,6 +2496,7 @@ namespace Palisades.ViewModel
                 return;
             }
 
+            RecordShortcutHistorySnapshot();
             shortcut.Name = normalized;
             RefreshGroups();
             Save();
@@ -1967,6 +2545,62 @@ namespace Palisades.ViewModel
             }
         }
 
+        public ICommand ClearSearchCommand
+        {
+            get
+            {
+                return new RelayCommand(() => SearchQuery = string.Empty, () => HasActiveSearch);
+            }
+        }
+
+        public ICommand ChooseThemeColorCommand
+        {
+            get
+            {
+                return new RelayCommand<string>(ChooseThemeColor);
+            }
+        }
+
+        public ICommand SelectBackgroundImageCommand
+        {
+            get
+            {
+                return new RelayCommand(SelectBackgroundImage);
+            }
+        }
+
+        public ICommand ClearBackgroundImageCommand
+        {
+            get
+            {
+                return new RelayCommand(ClearBackgroundImage, () => HasBackgroundImage);
+            }
+        }
+
+        public ICommand SelectFrameOverlayCommand
+        {
+            get
+            {
+                return new RelayCommand(SelectFrameOverlay);
+            }
+        }
+
+        public ICommand ClearFrameOverlayCommand
+        {
+            get
+            {
+                return new RelayCommand(ClearFrameOverlay, () => HasFrameOverlay);
+            }
+        }
+
+        public ICommand RedoShortcutCommand
+        {
+            get
+            {
+                return new RelayCommand(RedoLastShortcutChange, () => CanRedoShortcutHistory);
+            }
+        }
+
         public ICommand DelKeyPressed
         {
             get
@@ -1988,14 +2622,24 @@ namespace Palisades.ViewModel
             }
 
             Key pressedKey = keyEventArgs.Key == Key.System ? keyEventArgs.SystemKey : keyEventArgs.Key;
-            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && pressedKey == Key.Z)
+            bool isControlPressed = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+            bool isShiftPressed = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+
+            if (isControlPressed && (pressedKey == Key.Y || (isShiftPressed && pressedKey == Key.Z)))
+            {
+                RedoLastShortcutChange();
+                keyEventArgs.Handled = true;
+                return;
+            }
+
+            if (isControlPressed && pressedKey == Key.Z)
             {
                 UndoLastShortcutRemoval();
                 keyEventArgs.Handled = true;
                 return;
             }
 
-            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && pressedKey == Key.A)
+            if (isControlPressed && pressedKey == Key.A)
             {
                 ApplyShortcutSelection(Shortcuts, SelectedShortcut ?? Shortcuts.FirstOrDefault());
                 keyEventArgs.Handled = true;
@@ -2080,6 +2724,7 @@ namespace Palisades.ViewModel
                 return;
             }
 
+            RecordShortcutHistorySnapshot();
             lastRemovedShortcuts.Clear();
             lastRemovedShortcuts.AddRange(removalBatch.OrderBy(entry => entry.Index));
 
@@ -2092,16 +2737,27 @@ namespace Palisades.ViewModel
 
             SelectedShortcut = selectedShortcuts.LastOrDefault();
             OnPropertyChanged(nameof(CanUndoShortcutRemoval));
+            OnPropertyChanged(nameof(CanRedoShortcutHistory));
             CommandManager.InvalidateRequerySuggested();
         }
 
         public void UndoLastShortcutRemoval()
         {
+            if (undoShortcutHistory.Count > 0)
+            {
+                redoShortcutHistory.Push(CaptureShortcutHistorySnapshot());
+                ShortcutHistorySnapshot snapshot = undoShortcutHistory.Pop();
+                RestoreShortcutHistorySnapshot(snapshot);
+                lastRemovedShortcuts.Clear();
+                return;
+            }
+
             if (lastRemovedShortcuts.Count == 0)
             {
                 return;
             }
 
+            redoShortcutHistory.Push(CaptureShortcutHistorySnapshot());
             foreach ((Shortcut shortcut, int index) in lastRemovedShortcuts.OrderBy(entry => entry.Index))
             {
                 if (Shortcuts.Contains(shortcut))
@@ -2115,8 +2771,23 @@ namespace Palisades.ViewModel
 
             ApplyShortcutSelection(lastRemovedShortcuts.Select(entry => entry.Shortcut), lastRemovedShortcuts.Last().Shortcut);
             lastRemovedShortcuts.Clear();
+            Save();
             OnPropertyChanged(nameof(CanUndoShortcutRemoval));
+            OnPropertyChanged(nameof(CanRedoShortcutHistory));
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        public void RedoLastShortcutChange()
+        {
+            if (redoShortcutHistory.Count == 0)
+            {
+                return;
+            }
+
+            undoShortcutHistory.Push(CaptureShortcutHistorySnapshot());
+            ShortcutHistorySnapshot snapshot = redoShortcutHistory.Pop();
+            RestoreShortcutHistorySnapshot(snapshot);
+            lastRemovedShortcuts.Clear();
         }
 
         private void LaunchSelectedShortcut()

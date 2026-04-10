@@ -75,8 +75,34 @@
             <i:InvokeCommandAction Command="{Binding DelKeyPressed}" PassEventArgsToCommand="True" />
         </i:EventTrigger>
     </i:Interaction.Triggers>
-    <Border x:Name="LayoutRoot" CornerRadius="20">
-        <DockPanel>
+    <Border x:Name="LayoutRoot"
+            CornerRadius="20"
+            BorderBrush="{Binding AccentBrush}"
+            BorderThickness="2"
+            Background="#05000000"
+            SnapsToDevicePixels="True">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="18"
+                              ShadowDepth="0"
+                              Opacity="0.5"
+                              Color="{Binding AccentColor}" />
+        </Border.Effect>
+        <Grid ClipToBounds="True">
+            <Border Margin="8"
+                    CornerRadius="14"
+                    BorderThickness="1"
+                    BorderBrush="{Binding AccentBrush}"
+                    Opacity="0.35"
+                    IsHitTestVisible="False" />
+            <Grid IsHitTestVisible="False">
+                <Rectangle Height="2" Margin="34,16,34,0" VerticalAlignment="Top" Fill="{Binding AccentBrush}" Opacity="0.8" />
+                <Rectangle Height="2" Margin="34,0,34,16" VerticalAlignment="Bottom" Fill="{Binding AccentBrush}" Opacity="0.45" />
+                <Ellipse Width="10" Height="10" Fill="{Binding AccentBrush}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16,16,0,0" Opacity="0.9" />
+                <Ellipse Width="10" Height="10" Fill="{Binding AccentBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,16,0" Opacity="0.9" />
+                <Ellipse Width="10" Height="10" Fill="{Binding AccentBrush}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="16,0,0,16" Opacity="0.65" />
+                <Ellipse Width="10" Height="10" Fill="{Binding AccentBrush}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,16,16" Opacity="0.65" />
+            </Grid>
+            <DockPanel>
             <Grid DockPanel.Dock="Top" x:Name="Header" Height="{Binding HeaderHeight}" MinHeight="36" MouseLeftButtonDown="Header_MouseLeftButtonDown" IsHitTestVisible="True" Background="#00000000" Tag="{Binding DataContext, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}">
                 <Grid.ContextMenu>
                     <ContextMenu>
@@ -145,14 +171,30 @@
                     </Rectangle.Fill>
                 </Rectangle>
                 <Grid Grid.Column="1" Margin="8,0,8,0" ClipToBounds="False">
-                    <Label Content="{Binding Name, Mode=OneWay}" Visibility="{Binding TitleVisibility}" FontSize="{Binding TitleFontSize}" Foreground="{Binding TitleColor}" HorizontalAlignment="Center" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-                        <Label.Style>
-                            <Style TargetType="Label">
-                                <Setter Property="Padding" Value="0" />
-                                <Setter Property="MaxHeight" Value="100" />
-                            </Style>
-                        </Label.Style>
-                    </Label>
+                    <Border Visibility="{Binding TitleVisibility}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Padding="18,4"
+                            Margin="26,0"
+                            CornerRadius="8"
+                            BorderThickness="1"
+                            BorderBrush="{Binding AccentBrush}"
+                            Background="#16000000">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="14"
+                                              ShadowDepth="0"
+                                              Opacity="0.6"
+                                              Color="{Binding AccentColor}" />
+                        </Border.Effect>
+                        <Label Content="{Binding Name, Mode=OneWay}" FontSize="{Binding TitleFontSize}" FontFamily="{Binding TitleFontFamily}" Foreground="{Binding TitleColor}" HorizontalAlignment="Center" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                            <Label.Style>
+                                <Style TargetType="Label">
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="MaxHeight" Value="100" />
+                                </Style>
+                            </Label.Style>
+                        </Label>
+                    </Border>
                     <Grid Visibility="{Binding TabStripVisibility}" VerticalAlignment="Bottom" Margin="0,4,0,0">
                         <Border Height="1"
                                 Margin="4,0,4,1"
@@ -172,6 +214,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Button Style="{StaticResource JoinedTabButtonStyle}"
+                                                FontFamily="{Binding DataContext.TitleFontFamily, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                                 Foreground="{Binding DataContext.TitleColor, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                                 Command="{Binding Path=Data.SelectJoinedTabCommand, Source={StaticResource proxy}}"
                                                 CommandParameter="{Binding Identifier}"
@@ -223,6 +266,11 @@
                         <SolidColorBrush Color="{Binding BodyColor}" />
                     </Rectangle.Fill>
                 </Rectangle>
+                <Image Source="{Binding BackgroundImagePath, Converter={StaticResource PathToImage}}"
+                       Visibility="{Binding BackgroundImageVisibility}"
+                       Opacity="{Binding BackgroundImageOpacity}"
+                       Stretch="UniformToFill"
+                       IsHitTestVisible="False" />
                 <Grid Margin="14,12,14,12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -232,7 +280,8 @@
                             Margin="0,0,0,10"
                             Padding="8,4"
                             CornerRadius="10"
-                            Background="#22000000">
+                            Background="#22000000"
+                            Visibility="{Binding SearchVisibility}">
                         <DockPanel LastChildFill="True">
                             <TextBlock DockPanel.Dock="Left"
                                        Text="Search"
@@ -290,7 +339,8 @@
                                             <MenuItem Header="Rename" InputGestureText="F2" Command="{Binding Path=Data.BeginRenameShortcutCommand, Source={StaticResource proxy}}" CommandParameter="{Binding}" IsEnabled="{Binding Path=Data.CanEditShortcuts, Source={StaticResource proxy}}" />
                                             <MenuItem Header="Remove from fence" InputGestureText="Delete" Command="{Binding Path=Data.RemoveSelectedShortcutCommand, Source={StaticResource proxy}}" CommandParameter="{Binding}" IsEnabled="{Binding Path=Data.CanEditShortcuts, Source={StaticResource proxy}}" />
                                             <MenuItem Header="{Binding Path=Data.RemoveSelectedMenuHeader, Source={StaticResource proxy}}" InputGestureText="Delete" Command="{Binding Path=Data.RemoveAllSelectedShortcutsCommand, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.HasSelectedShortcut, Source={StaticResource proxy}}" />
-                                            <MenuItem Header="Undo last remove" InputGestureText="Ctrl+Z" Command="{Binding Path=Data.UndoRemoveShortcutCommand, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.CanUndoShortcutRemoval, Source={StaticResource proxy}}" />
+                                            <MenuItem Header="Undo last change" InputGestureText="Ctrl+Z" Command="{Binding Path=Data.UndoRemoveShortcutCommand, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.CanUndoShortcutRemoval, Source={StaticResource proxy}}" />
+                                            <MenuItem Header="Redo last change" InputGestureText="Ctrl+Y" Command="{Binding Path=Data.RedoShortcutCommand, Source={StaticResource proxy}}" IsEnabled="{Binding Path=Data.CanRedoShortcutHistory, Source={StaticResource proxy}}" />
                                         </ContextMenu>
                                     </ContentControl.ContextMenu>
                                     <i:Interaction.Triggers>
@@ -386,6 +436,12 @@
                     </ScrollViewer>
                 </Grid>
             </Grid>
-        </DockPanel>
+            </DockPanel>
+            <Image Source="{Binding FrameOverlayPath, Converter={StaticResource PathToImage}}"
+                   Visibility="{Binding FrameOverlayVisibility}"
+                   Opacity="{Binding FrameOverlayOpacity}"
+                   Stretch="Fill"
+                   IsHitTestVisible="False" />
+        </Grid>
     </Border>
 </Window>
